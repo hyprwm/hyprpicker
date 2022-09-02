@@ -295,7 +295,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_matrix_init_identity(&matrix);
     cairo_matrix_translate(&matrix, CLICKPOS.x + 0.5f, CLICKPOS.y + 0.5f);
     cairo_matrix_scale(&matrix, 0.1f, 0.1f);
-    cairo_matrix_translate(&matrix, - CLICKPOS.x - 0.5f, - CLICKPOS.y - 0.5f);
+    cairo_matrix_translate(&matrix, - CLICKPOS.x / SCALEBUFS.x - 0.5f, - CLICKPOS.y / SCALEBUFS.y - 0.5f);
     cairo_pattern_set_matrix(PATTERN, &matrix);
     cairo_set_source(PCAIRO, PATTERN);
     cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
