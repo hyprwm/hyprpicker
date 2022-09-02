@@ -1,0 +1,21 @@
+name: Build Hyprpicker (Nix)
+
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  nix:
+    name: "Build"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Install nix
+      uses: cachix/install-nix-action@v17
+      with:
+        install_url: https://releases.nixos.org/nix/nix-2.10.3/install
+        extra_nix_config: |
+          auto-optimise-store = true
+          experimental-features = nix-command flakes
+    - name: Build Hyprpicker with default settings
+      run: nix build --print-build-logs
