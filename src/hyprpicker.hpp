@@ -46,6 +46,8 @@ public:
     void            markDirty();
 
     void            finish(int code = 0);
+
+    CColor          getColorFromPixel(CLayerSurface*, Vector2D);
 private:
     
 };

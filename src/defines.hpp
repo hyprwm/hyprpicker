@@ -4,6 +4,7 @@
 #include "helpers/Vector2D.hpp"
 #include "includes.hpp"
 #include "helpers/Monitor.hpp"
+#include "helpers/Color.hpp"
 
 // git stuff
 #ifndef GIT_COMMIT_HASH

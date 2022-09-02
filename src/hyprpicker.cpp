@@ -229,8 +229,8 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
         convertBuffer(&pSurface->screenBuffer);
         pSurface->screenBuffer.surface = cairo_image_surface_create_for_data((unsigned char*)pSurface->screenBuffer.data, CAIRO_FORMAT_ARGB32, pSurface->screenBuffer.pixelSize.x, pSurface->screenBuffer.pixelSize.y, pSurface->screenBuffer.pixelSize.x * 4);
     }
-        
-    PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y, PBUFFER->pixelSize.x * 4);
+
+    PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale, PBUFFER->pixelSize.x * 4);
     PBUFFER->cairo = cairo_create(PBUFFER->surface);
 
     const auto PCAIRO = PBUFFER->cairo;
@@ -241,9 +241,24 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
     cairo_fill(PCAIRO);
 
-    cairo_set_source_surface(PCAIRO, pSurface->screenBuffer.surface, 0, 0);
-    cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
-    cairo_fill(PCAIRO);
+    const auto SCALEBUFS = Vector2D { pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y };
+    const auto SCALECURSOR = Vector2D{
+        g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
+        g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
+    const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y};
+
+    const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+    cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
+    cairo_matrix_t matrixPre;
+    cairo_matrix_init_identity(&matrixPre);
+    cairo_matrix_scale(&matrixPre, SCALEBUFS.x, SCALEBUFS.y);
+    cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
+    cairo_set_source(PCAIRO, PATTERNPRE);
+    cairo_paint(PCAIRO);
+
+    cairo_surface_flush(PBUFFER->surface);
+
+    cairo_pattern_destroy(PATTERNPRE);
 
     // we draw the preview like this
     //
@@ -258,11 +273,12 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_restore(PCAIRO);
     cairo_save(PCAIRO);
 
-    cairo_set_source_rgba(PCAIRO, 1.f, 0.4f, 0.4f, 0.8f);
+    const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
+    cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
 
     cairo_scale(PCAIRO, 1, 1);
 
-    cairo_arc(PCAIRO, m_vLastCoords.x, m_vLastCoords.y, 101, 0, 2 * M_PI);
+    cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 105 / SCALEBUFS.x, 0, 2 * M_PI);
     cairo_clip(PCAIRO);
 
     cairo_fill(PCAIRO);
@@ -277,11 +293,12 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
     cairo_matrix_t matrix;
     cairo_matrix_init_identity(&matrix);
-    cairo_matrix_translate(&matrix, (m_vLastCoords.x) / 1.112f, (m_vLastCoords.y) / 1.112f); // WHAT IS THIS SHIT???? WHY????
+    cairo_matrix_translate(&matrix, CLICKPOS.x, CLICKPOS.y);
     cairo_matrix_scale(&matrix, 0.1f, 0.1f);
+    cairo_matrix_translate(&matrix, -CLICKPOS.x, -CLICKPOS.y);
     cairo_pattern_set_matrix(PATTERN, &matrix);
     cairo_set_source(PCAIRO, PATTERN);
-    cairo_arc(PCAIRO, m_vLastCoords.x, m_vLastCoords.y, 100, 0, 2 * M_PI);
+    cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
     cairo_clip(PCAIRO);
     cairo_paint(PCAIRO);
 
@@ -306,8 +323,20 @@ void CHyprpicker::sendFrame(CLayerSurface* pSurface) {
     wl_callback_add_listener(pSurface->frame_callback, &Events::frameListener, pSurface);
 
     wl_surface_attach(pSurface->pSurface, pSurface->lastBuffer == 0 ? pSurface->buffers[0].buffer : pSurface->buffers[1].buffer, 0, 0);
+    wl_surface_set_buffer_scale(pSurface->pSurface, pSurface->m_pMonitor->scale);
     wl_surface_damage_buffer(pSurface->pSurface, 0, 0, INT32_MAX, INT32_MAX);
     wl_surface_commit(pSurface->pSurface);
 
     pSurface->dirty = false;
+}
+
+CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
+    struct pixel {
+        unsigned char blue;
+        unsigned char green;
+        unsigned char red;
+        unsigned char alpha;
+    }* px = (struct pixel*)(pLS->screenBuffer.data + (int)pix.y * (int)pLS->screenBuffer.pixelSize.x * 4 + (int)pix.x * 4);
+
+    return CColor{(uint8_t)px->red, (uint8_t)px->green, (uint8_t)px->blue, (uint8_t)px->alpha};
 }

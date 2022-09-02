@@ -113,18 +113,16 @@ void Events::handlePointerMotion(void *data, struct wl_pointer *wl_pointer, uint
 
 void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
     // get the px and print it
-    const auto CLICKPOS = g_pHyprpicker->m_vLastCoords.floor();
+    const auto SCALE = Vector2D{
+        g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
+        g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)
+    };
 
-    const auto PLS = g_pHyprpicker->m_pLastSurface;
+    const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALE.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALE.y};
 
-    struct pixel {
-        unsigned char blue;
-        unsigned char green;
-        unsigned char red;
-        unsigned char alpha;
-    } *px = (struct pixel *)(PLS->screenBuffer.data + (int)CLICKPOS.y * (int)PLS->screenBuffer.pixelSize.x * 4 + (int)CLICKPOS.x * 4);
+    const auto COL = g_pHyprpicker->getColorFromPixel(g_pHyprpicker->m_pLastSurface, CLICKPOS);
 
-    Debug::log(NONE, "Result RGBA: %i %i %i %i", px->red, px->green, px->blue, px->alpha);
+    Debug::log(NONE, "Result RGBA: %i %i %i %i", COL.r, COL.g, COL.b, COL.a);
 
     g_pHyprpicker->finish();
 }
