@@ -273,7 +273,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_restore(PCAIRO);
     cairo_save(PCAIRO);
 
-    const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
+    const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS - Vector2D(5,5) /* Remove the pad */);
     cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
 
     cairo_scale(PCAIRO, 1, 1);
