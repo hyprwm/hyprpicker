@@ -245,7 +245,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     const auto SCALECURSOR = Vector2D{
         g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
         g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
-    const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x + 5, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y + 5};
+    const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y};
 
     const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
     cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
@@ -273,7 +273,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_restore(PCAIRO);
     cairo_save(PCAIRO);
 
-    const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS - Vector2D(5,5) /* Remove the pad */);
+    const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
     cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
 
     cairo_scale(PCAIRO, 1, 1);
@@ -293,9 +293,9 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
     cairo_matrix_t matrix;
     cairo_matrix_init_identity(&matrix);
-    cairo_matrix_translate(&matrix, CLICKPOS.x, CLICKPOS.y);
+    cairo_matrix_translate(&matrix, CLICKPOS.x + 0.5f, CLICKPOS.y + 0.5f);
     cairo_matrix_scale(&matrix, 0.1f, 0.1f);
-    cairo_matrix_translate(&matrix, - CLICKPOS.x, - CLICKPOS.y);
+    cairo_matrix_translate(&matrix, - CLICKPOS.x - 0.5f, - CLICKPOS.y - 0.5f);
     cairo_pattern_set_matrix(PATTERN, &matrix);
     cairo_set_source(PCAIRO, PATTERN);
     cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
