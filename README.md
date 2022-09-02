@@ -6,9 +6,11 @@ A wlroots-compatible Wayland color picker that does not suck.
 
 # Usage
 
-launch it. Click. That's it.
+Launch it. Click. That's it.
 
 # Building
+
+It's also on the AUR as `hyprpicker-git`
 
 `make all`
 
