@@ -2,7 +2,7 @@
 
 A wlroots-compatible Wayland color picker that does not suck.
 
-![20220902_18h07m04s_grim](https://user-images.githubusercontent.com/43317083/188194663-aa124f84-d86e-41e3-bb4f-3c7287a7de63.png)
+![20220902_19h42m18s_grim](https://user-images.githubusercontent.com/43317083/188208755-0447dd12-72d6-4f64-8b3b-a69ff181b66a.png)
 
 # Usage
 
