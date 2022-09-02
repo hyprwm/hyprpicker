@@ -15,6 +15,8 @@ int main(int argc, char** argv, char** envp) {
             if (arg == "--format") {
                 currentlyParsing = 1;
                 continue;
+            } else if (arg == "--no-fancy") {
+                g_pHyprpicker->m_bFancyOutput = false;
             } else {
                 Debug::log(NONE, "Unrecognized option %s", arg.c_str());
                 exit(1);
@@ -31,6 +33,9 @@ int main(int argc, char** argv, char** envp) {
             continue;
         }
     }
+
+    if (!isatty(fileno(stdout)) || getenv("NO_COLOR"))
+        g_pHyprpicker->m_bFancyOutput = false;
 
     g_pHyprpicker->init();
 
