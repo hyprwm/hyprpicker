@@ -13,3 +13,7 @@ launch it. Click. That's it.
 `make all`
 
 the output binary is in `./build/hyprpicker`
+
+# Caveats
+
+"Freezes" your displays when picking the color.
