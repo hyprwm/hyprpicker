@@ -219,7 +219,7 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
     }
 }
 
-void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
+void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     const auto PBUFFER = getBufferForLS(pSurface);
 
     if (!PBUFFER || !pSurface->screenBuffer.buffer)
@@ -241,72 +241,80 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
     cairo_fill(PCAIRO);
 
-    const auto SCALEBUFS = Vector2D { pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y };
-    const auto SCALECURSOR = Vector2D{
-        g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
-        g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
-    const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y};
+    if (pSurface == g_pHyprpicker->m_pLastSurface && !forceInactive) {
+        const auto SCALEBUFS = Vector2D{pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y};
+        const auto SCALECURSOR = Vector2D{
+            g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
+            g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
+        const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y};
 
-    const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
-    cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
-    cairo_matrix_t matrixPre;
-    cairo_matrix_init_identity(&matrixPre);
-    cairo_matrix_scale(&matrixPre, SCALEBUFS.x, SCALEBUFS.y);
-    cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
-    cairo_set_source(PCAIRO, PATTERNPRE);
-    cairo_paint(PCAIRO);
+        const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+        cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
+        cairo_matrix_t matrixPre;
+        cairo_matrix_init_identity(&matrixPre);
+        cairo_matrix_scale(&matrixPre, SCALEBUFS.x, SCALEBUFS.y);
+        cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
+        cairo_set_source(PCAIRO, PATTERNPRE);
+        cairo_paint(PCAIRO);
 
-    cairo_surface_flush(PBUFFER->surface);
+        cairo_surface_flush(PBUFFER->surface);
 
-    cairo_pattern_destroy(PATTERNPRE);
+        cairo_pattern_destroy(PATTERNPRE);
 
-    // we draw the preview like this
-    //
-    //     200px        ZOOM: 10x
-    // | --------- |
-    // |           |
-    // |     x     | 200px
-    // |           |
-    // | --------- |
-    //
+        // we draw the preview like this
+        //
+        //     200px        ZOOM: 10x
+        // | --------- |
+        // |           |
+        // |     x     | 200px
+        // |           |
+        // | --------- |
+        //
 
-    cairo_restore(PCAIRO);
-    cairo_save(PCAIRO);
+    
+        cairo_restore(PCAIRO);
+        cairo_save(PCAIRO);
 
-    const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
-    cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
+        const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
+        cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
 
-    cairo_scale(PCAIRO, 1, 1);
+        cairo_scale(PCAIRO, 1, 1);
 
-    cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 105 / SCALEBUFS.x, 0, 2 * M_PI);
-    cairo_clip(PCAIRO);
+        cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 105 / SCALEBUFS.x, 0, 2 * M_PI);
+        cairo_clip(PCAIRO);
 
-    cairo_fill(PCAIRO);
-    cairo_paint(PCAIRO);
+        cairo_fill(PCAIRO);
+        cairo_paint(PCAIRO);
 
-    cairo_surface_flush(PBUFFER->surface);
+        cairo_surface_flush(PBUFFER->surface);
 
-    cairo_restore(PCAIRO);
-    cairo_save(PCAIRO);
+        cairo_restore(PCAIRO);
+        cairo_save(PCAIRO);
 
-    const auto PATTERN = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
-    cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
-    cairo_matrix_t matrix;
-    cairo_matrix_init_identity(&matrix);
-    cairo_matrix_translate(&matrix, CLICKPOS.x + 0.5f, CLICKPOS.y + 0.5f);
-    cairo_matrix_scale(&matrix, 0.1f, 0.1f);
-    cairo_matrix_translate(&matrix, - CLICKPOS.x / SCALEBUFS.x - 0.5f, - CLICKPOS.y / SCALEBUFS.y - 0.5f);
-    cairo_pattern_set_matrix(PATTERN, &matrix);
-    cairo_set_source(PCAIRO, PATTERN);
-    cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
-    cairo_clip(PCAIRO);
-    cairo_paint(PCAIRO);
+        const auto PATTERN = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+        cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
+        cairo_matrix_t matrix;
+        cairo_matrix_init_identity(&matrix);
+        cairo_matrix_translate(&matrix, CLICKPOS.x + 0.5f, CLICKPOS.y + 0.5f);
+        cairo_matrix_scale(&matrix, 0.1f, 0.1f);
+        cairo_matrix_translate(&matrix, -CLICKPOS.x / SCALEBUFS.x - 0.5f, -CLICKPOS.y / SCALEBUFS.y - 0.5f);
+        cairo_pattern_set_matrix(PATTERN, &matrix);
+        cairo_set_source(PCAIRO, PATTERN);
+        cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
+        cairo_clip(PCAIRO);
+        cairo_paint(PCAIRO);
 
-    cairo_surface_flush(PBUFFER->surface);
+        cairo_surface_flush(PBUFFER->surface);
 
-    cairo_restore(PCAIRO);
+        cairo_restore(PCAIRO);
 
-    cairo_pattern_destroy(PATTERN);
+        cairo_pattern_destroy(PATTERN);
+    } else {
+        cairo_set_operator(PCAIRO, CAIRO_OPERATOR_SOURCE);
+        cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
+        cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
+        cairo_fill(PCAIRO);
+    }
 
     sendFrame(pSurface);
     cairo_destroy(PCAIRO);

@@ -81,6 +81,8 @@ void Events::handleCapabilities(void *data, wl_seat *wl_seat, uint32_t capabilit
 }
 
 void Events::handlePointerEnter(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+    g_pHyprpicker->markDirty();
+
     for (auto& ls : g_pHyprpicker->m_vLayerSurfaces) {
         if (ls->pSurface == surface) {
             g_pHyprpicker->m_pLastSurface = ls.get();
@@ -94,7 +96,11 @@ void Events::handlePointerEnter(void *data, struct wl_pointer *wl_pointer, uint3
 }
 
 void Events::handlePointerLeave(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface) {
-    // ignored
+    for (auto& ls : g_pHyprpicker->m_vLayerSurfaces) {
+        if (ls->pSurface == surface) {
+            g_pHyprpicker->renderSurface(ls.get(), true);
+        }
+    }
 }
 
 void Events::handlePointerAxis(void *data, wl_pointer *wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {

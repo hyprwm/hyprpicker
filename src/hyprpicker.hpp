@@ -37,7 +37,7 @@ public:
 
     Vector2D        m_vLastCoords;
 
-    void            renderSurface(CLayerSurface*);
+    void            renderSurface(CLayerSurface*, bool forceInactive = false);
 
     void            createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t);
     void            destroyBuffer(SPoolBuffer*);
