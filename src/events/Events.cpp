@@ -136,7 +136,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 return result;
             };
 
-            Debug::log(NONE, "0x%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+            Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
             break;
         }
