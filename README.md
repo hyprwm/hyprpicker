@@ -12,6 +12,8 @@ Launch it. Click. That's it.
 
 `--format [fmt]` to specify the output format (`hex`, `rgb`)
 
+`--no-fancy` disables the "fancy" (aka. colored) outputting
+
 # Building
 
 It's also on the AUR as `hyprpicker-git`
