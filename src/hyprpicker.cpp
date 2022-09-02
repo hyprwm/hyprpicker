@@ -245,7 +245,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     const auto SCALECURSOR = Vector2D{
         g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
         g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
-    const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y};
+    const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x + 5, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y + 5};
 
     const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
     cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
@@ -295,7 +295,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface) {
     cairo_matrix_init_identity(&matrix);
     cairo_matrix_translate(&matrix, CLICKPOS.x, CLICKPOS.y);
     cairo_matrix_scale(&matrix, 0.1f, 0.1f);
-    cairo_matrix_translate(&matrix, -CLICKPOS.x, -CLICKPOS.y);
+    cairo_matrix_translate(&matrix, - CLICKPOS.x, - CLICKPOS.y);
     cairo_pattern_set_matrix(PATTERN, &matrix);
     cairo_set_source(PCAIRO, PATTERN);
     cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
