@@ -24,7 +24,8 @@ void Events::scale(void *data, wl_output *wl_output, int32_t scale) {
 void Events::name(void *data, wl_output *wl_output, const char *name) {
     const auto PMONITOR = (SMonitor*)data;
 
-    PMONITOR->name = name;
+    if (name)
+        PMONITOR->name = name;
 }
 
 void Events::description(void *data, wl_output *wl_output, const char *description) {
