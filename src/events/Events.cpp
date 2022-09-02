@@ -122,7 +122,30 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
 
     const auto COL = g_pHyprpicker->getColorFromPixel(g_pHyprpicker->m_pLastSurface, CLICKPOS);
 
-    Debug::log(NONE, "Result RGBA: %i %i %i %i", COL.r, COL.g, COL.b, COL.a);
+    switch (g_pHyprpicker->m_bSelectedOutputMode) {
+        case OUTPUT_HEX:
+        {
+            auto toHex = [](int i) -> std::string {
+                const char* DS = "0123456789ABCDEF";
+
+                std::string result = "";
+
+                result += DS[i / 16];
+                result += DS[i % 16];
+
+                return result;
+            };
+
+            Debug::log(NONE, "0x%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+
+            break;
+        }
+        case OUTPUT_RGB:
+        {
+            Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
+            break;
+        }
+    }
 
     g_pHyprpicker->finish();
 }

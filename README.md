@@ -8,6 +8,10 @@ A wlroots-compatible Wayland color picker that does not suck.
 
 Launch it. Click. That's it.
 
+## Options
+
+`--format [fmt]` to specify the output format (`hex`, `rgb`)
+
 # Building
 
 It's also on the AUR as `hyprpicker-git`

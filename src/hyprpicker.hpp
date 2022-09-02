@@ -4,6 +4,11 @@
 #include "helpers/LayerSurface.hpp"
 #include "helpers/PoolBuffer.hpp"
 
+enum eOutputMode {
+    OUTPUT_HEX = 0,
+    OUTPUT_RGB
+};
+
 class CHyprpicker {
 public:
     void            init();
@@ -16,6 +21,8 @@ public:
     wl_shm*         m_pWLSHM;
     zwlr_layer_shell_v1* m_pLayerShell;
     zwlr_screencopy_manager_v1* m_pSCMgr;
+
+    eOutputMode     m_bSelectedOutputMode = OUTPUT_HEX;
 
     bool            m_bRunning = true;
 
