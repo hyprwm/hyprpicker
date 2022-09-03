@@ -16,8 +16,10 @@ Launch it. Click. That's it.
 
 # Building
 
-It's also on the AUR as `hyprpicker-git`
+## Arch
+`yay -S hyprpaper-git`
 
+## Manual
 `make all`
 
 the output binary is in `./build/hyprpicker`
