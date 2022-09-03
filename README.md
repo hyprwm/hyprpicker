@@ -17,7 +17,7 @@ Launch it. Click. That's it.
 # Building
 
 ## Arch
-`yay -S hyprpaper-git`
+`yay -S hyprpicker-git`
 
 ## Manual
 `make all`
