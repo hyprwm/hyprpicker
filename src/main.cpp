@@ -18,7 +18,10 @@ int main(int argc, char** argv, char** envp) {
             } else if (arg == "--no-fancy") {
                 g_pHyprpicker->m_bFancyOutput = false;
             } else {
-                Debug::log(NONE, "Unrecognized option %s", arg.c_str());
+                std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
+                    " --format [fmt]  | Specifies the output format (hex, rgb)\n" <<
+                    " --no-fancy      | Disables the \"fancy\" (aka. colored) outputting\n" <<
+                    " --help          | Show this help message\n";
                 exit(1);
             }
         } else if (currentlyParsing == 1) {
