@@ -142,10 +142,10 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 return result;
             };
 
-            if (g_pHyprpicker->m_bAutoCopy) {
-                std::stringstream hex_sstr;
-                hex_sstr << "\\#" << toHex(COL.r) << toHex(COL.g) << toHex(COL.b) << std::endl;   
-                Clipboard::copy(hex_sstr.str());
+            if (g_pHyprpicker->m_bAutoCopyEnabled) {
+                std::stringstream hexOutputStringstream;
+                hexOutputStringstream << "#" << toHex(COL.r) << toHex(COL.g) << toHex(COL.b);   
+                Clipboard::copy(hexOutputStringstream.str());
             }
 
             if (g_pHyprpicker->m_bFancyOutput)
@@ -157,10 +157,10 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
         }
         case OUTPUT_RGB:
         {
-            if (g_pHyprpicker->m_bAutoCopy) {
-                std::stringstream rbg_sstr;
-                rbg_sstr << (int)COL.r << " " << (int)COL.g << " " << (int)COL.b << std::endl;   
-                Clipboard::copy(rbg_sstr.str());
+            if (g_pHyprpicker->m_bAutoCopyEnabled) {
+                std::stringstream rgbOutputStringstream;
+                rgbOutputStringstream << (int)COL.r << " " << (int)COL.g << " " << (int)COL.b << std::endl;   
+                Clipboard::copy(rgbOutputStringstream.str());
             }
 
             if (g_pHyprpicker->m_bFancyOutput)

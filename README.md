@@ -10,7 +10,7 @@ Launch it. Click. That's it.
 
 ## Options
 
-`--autocopy` Automatically copies the output to the clipboard
+`--autocopy` Automatically copies the output to the clipboard (requires wl-copy)
 
 `--format [fmt]` to specify the output format (`hex`, `rgb`)
 

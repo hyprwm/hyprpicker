@@ -14,16 +14,8 @@ int main(int argc, char** argv, char** envp) {
 
         if (currentlyParsing == 0) {
             if (arg == "--autocopy") {
-                g_pHyprpicker->m_bAutoCopy = true;
-
-                std::filesystem::path wlcopy_bin_path{ "/usr/bin/wl-copy" };
-                if (std::filesystem::exists(wlcopy_bin_path)) {
-                    continue;
-                } else {
-                    Debug::log(INFO, "If you want to use the --autocopy argument you need to install wl-copy.");
-                    exit(1);
-                }
-
+                g_pHyprpicker->m_bAutoCopyEnabled = true;
+                continue;
             } else if (arg == "--format") {
                 currentlyParsing = 1;
                 continue;
@@ -31,7 +23,7 @@ int main(int argc, char** argv, char** envp) {
                 g_pHyprpicker->m_bFancyOutput = false;
             } else {
                 std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
-                    " --autocopy      | Automatically copies the output to the clipboard\n" <<
+                    " --autocopy      | Automatically copies the output to the clipboard (requires wl-copy)\n" <<
                     " --format [fmt]  | Specifies the output format (hex, rgb)\n" <<
                     " --no-fancy      | Disables the \"fancy\" (aka. colored) outputting\n" <<
                     " --help          | Show this help message\n";
