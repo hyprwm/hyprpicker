@@ -7,18 +7,23 @@ int main(int argc, char** argv, char** envp) {
 
     // parse args
     // 1 - format
+    
     int currentlyParsing = 0;
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
 
         if (currentlyParsing == 0) {
-            if (arg == "--format") {
+            if (arg == "--autocopy") {
+                g_pHyprpicker->m_bAutoCopy = true;
+                continue;
+            } else if (arg == "--format") {
                 currentlyParsing = 1;
                 continue;
             } else if (arg == "--no-fancy") {
                 g_pHyprpicker->m_bFancyOutput = false;
             } else {
                 std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
+                    " --autocopy      | Automatically copies the output to the clipboard\n" <<
                     " --format [fmt]  | Specifies the output format (hex, rgb)\n" <<
                     " --no-fancy      | Disables the \"fancy\" (aka. colored) outputting\n" <<
                     " --help          | Show this help message\n";

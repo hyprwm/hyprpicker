@@ -24,6 +24,7 @@ public:
 
     eOutputMode     m_bSelectedOutputMode = OUTPUT_HEX;
 
+    bool            m_bAutoCopy = false;
     bool            m_bFancyOutput = true;
 
     bool            m_bRunning = true;

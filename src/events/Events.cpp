@@ -142,6 +142,12 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 return result;
             };
 
+            if (g_pHyprpicker->m_bAutoCopy) {
+                std::stringstream hex_sstr;
+                hex_sstr << "\\#" << toHex(COL.r) << toHex(COL.g) << toHex(COL.b) << std::endl;   
+                Clipboard::copy(hex_sstr.str());
+            }
+
             if (g_pHyprpicker->m_bFancyOutput)
                 Debug::log(NONE, "\033[38;2;%i;%i;%im #%s%s%s", COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
             else
@@ -151,6 +157,12 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
         }
         case OUTPUT_RGB:
         {
+            if (g_pHyprpicker->m_bAutoCopy) {
+                std::stringstream rbg_sstr;
+                rbg_sstr << (int)COL.r << " " << (int)COL.g << " " << (int)COL.b << std::endl;   
+                Clipboard::copy(rbg_sstr.str());
+            }
+
             if (g_pHyprpicker->m_bFancyOutput)
                 Debug::log(NONE, "\033[38;2;%i;%i;%im %i %i %i", COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
             else
