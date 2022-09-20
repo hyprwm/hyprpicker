@@ -10,6 +10,8 @@ Launch it. Click. That's it.
 
 ## Options
 
+`--autocopy` Automatically copies the output to the clipboard
+
 `--format [fmt]` to specify the output format (`hex`, `rgb`)
 
 `--no-fancy` disables the "fancy" (aka. colored) outputting
