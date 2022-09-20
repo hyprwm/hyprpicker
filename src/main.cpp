@@ -15,7 +15,15 @@ int main(int argc, char** argv, char** envp) {
         if (currentlyParsing == 0) {
             if (arg == "--autocopy") {
                 g_pHyprpicker->m_bAutoCopy = true;
-                continue;
+
+                std::filesystem::path wlcopy_bin_path{ "/usr/bin/wl-copy" };
+                if (std::filesystem::exists(wlcopy_bin_path)) {
+                    continue;
+                } else {
+                    Debug::log(INFO, "If you want to use the --autocopy argument you need to install wl-copy.");
+                    exit(1);
+                }
+
             } else if (arg == "--format") {
                 currentlyParsing = 1;
                 continue;
