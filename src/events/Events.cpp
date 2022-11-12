@@ -143,7 +143,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             };
 
             if (g_pHyprpicker->m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%im #%s%s%s\033[0m", COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+                Debug::log(NONE, "\033[38;2;%i;%i;%im#%s%s%s\033[0m", COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
             else
                 Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
@@ -152,7 +152,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
         case OUTPUT_RGB:
         {
             if (g_pHyprpicker->m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%im %i %i %i\033[0m", COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                Debug::log(NONE, "\033[38;2;%i;%i;%im%i %i %i\033[0m", COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
             else
                 Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
             break;
