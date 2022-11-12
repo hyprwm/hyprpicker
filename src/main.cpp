@@ -2,39 +2,50 @@
 #include "hyprpicker.hpp"
 
 
+static void help(void) {
+    std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
+        " -f | --format=fmt  | Specifies the output format (hex, rgb)\n" <<
+        " -n | --no-fancy    | Disables the \"fancy\" (aka. colored) outputting\n" <<
+        " -h | --help        | Show this help message\n";
+}
+
 int main(int argc, char** argv, char** envp) {
     g_pHyprpicker = std::make_unique<CHyprpicker>();
 
-    // parse args
-    // 1 - format
-    int currentlyParsing = 0;
-    for (int i = 1; i < argc; i++) {
-        std::string arg = argv[i];
+    while (true) {
+        int option_index = 0;
+        static struct option long_options[] = {
+            {"format",   required_argument, NULL, 'f'},
+            {"help",     no_argument,       NULL, 'h'},
+            {"no-fancy", no_argument,       NULL, 'n'},
+            {NULL,       0,                 NULL,  0 }
+        };
 
-        if (currentlyParsing == 0) {
-            if (arg == "--format") {
-                currentlyParsing = 1;
-                continue;
-            } else if (arg == "--no-fancy") {
+        int c = getopt_long(argc, argv, ":f:hn", long_options, &option_index);
+        if (c == -1)
+            break;
+
+        switch (c) {
+            case 'f':
+                if (strcmp(optarg, "hex") == 0)
+                    g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_HEX;
+                else if (strcmp(optarg, "rgb") == 0)
+                    g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_RGB;
+                else {
+                    Debug::log(NONE, "Unrecognized format %s", optarg);
+                    exit(1);
+                }
+                break;
+            case 'h':
+                help();
+                exit(0);
+            case 'n':
                 g_pHyprpicker->m_bFancyOutput = false;
-            } else {
-                std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
-                    " --format [fmt]  | Specifies the output format (hex, rgb)\n" <<
-                    " --no-fancy      | Disables the \"fancy\" (aka. colored) outputting\n" <<
-                    " --help          | Show this help message\n";
+                break;
+            default:
+                help();
                 exit(1);
             }
-        } else if (currentlyParsing == 1) {
-            if (arg == "hex") g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_HEX;
-            else if (arg == "rgb") g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_RGB;
-            else {
-                Debug::log(NONE, "Unrecognized format %s", arg.c_str());
-                exit(1);
-            }
-
-            currentlyParsing = 0;
-            continue;
-        }
     }
 
     if (!isatty(fileno(stdout)) || getenv("NO_COLOR"))

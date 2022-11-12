@@ -10,9 +10,11 @@ Launch it. Click. That's it.
 
 ## Options
 
-`--format [fmt]` to specify the output format (`hex`, `rgb`)
+`-f | --format=[fmt]` specifies the output format (`hex`, `rgb`)
 
-`--no-fancy` disables the "fancy" (aka. colored) outputting
+`-n | --no-fancy` disables the "fancy" (aka. colored) outputting
+
+`-h | --help` prints a help message
 
 # Building
 
