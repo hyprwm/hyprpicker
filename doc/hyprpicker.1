@@ -1,0 +1,80 @@
+.Dd $Mdocdate: November 14 2022 $
+.Dt HYPRPICKER 1
+.Os Linux
+.Sh NAME
+.Nm hyprpicker
+.Nd wlroots-compatible wayland color picker
+.Sh SYNOPSIS
+.Nm
+.Op Fl nh
+.Op Fl f Ar fmt
+.Sh DESCRIPTION
+The
+.Nm
+utility is a color-picker with support for various output formats.
+When
+.Nm
+is invoked the cursor is transformed into a magnifying lens, and clicking on any
+pixel of the screen will print out that pixels color to the standard output.
+The default output format is hexadecimal, but that can be configured with the
+.Fl f
+option.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl f Ns , Fl \-format Ns = Ns Ar fmt
+Select the format to output the selected pixels color in.
+The available options are:
+.Pp
+.Bl -hang -compact
+.It Ar hex
+.Pq Dq #RRGGBB
+.It Ar rgb
+.Pq Dq R G B
+.It Ar hsl
+.Pq Dq H S% L%
+.It Ar hsv
+.Pq Dq H S% V%
+.El
+.Pp
+The default format is
+.Ar hex .
+.It Fl n Ns , Fl \-no\-fancy
+Disable colored output.
+Default behavior is to color the output in the same color as the selected pixel.
+.It Fl h Ns , Fl \-help
+Display a help message and exit successfully from the program.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width NO_COLOR
+.It Ev NO_COLOR
+If set, disables colored output.
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh EXAMPLES
+Get a pixels color:
+.Pp
+.Dl $ hyprpicker
+.Pp
+Get a pixels color in HSL, wrapped in a CSS
+.Fn hsl
+function:
+.Pp
+.Dl $ hyprpicker -f hsl | sed 's/^/rgb(/; s/$/)/; y/ /,/'
+.Sh SEE ALSO
+.Xr hyprctl 1 ,
+.Xr hyprland 1 ,
+.Xr sed 1
+.Pp
+.Lk https://github.com/hyprwm/hyprpicker "The Hyprpicker Sources"
+.Sh AUTHORS
+.An -nosplit
+The
+.Nm
+utility was originally written by
+.An Vaxerski Aq Lk https://github.com/vaxerski
+and the manual page by
+.An Thomas Voss Aq Mt mail@thomasvoss.com .
+.Sh BUGS
+.Lk https://github.com/hyprwm/hyprpicker/issues "The Hyprpicker Bug Tracker"
