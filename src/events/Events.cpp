@@ -118,6 +118,13 @@ void Events::handlePointerMotion(void *data, struct wl_pointer *wl_pointer, uint
 }
 
 void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
+    auto fmax3 = [](float a, float b, float c) -> float {
+        return (a > b && a > c) ? a : (b > c) ? b : c;
+    };
+    auto fmin3 = [](float a, float b, float c) -> float {
+        return (a < b && a < c) ? a : (b < c) ? b : c;
+    };
+
     // get the px and print it
     const auto SCALE = Vector2D{
         g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
@@ -129,6 +136,30 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
     const auto COL = g_pHyprpicker->getColorFromPixel(g_pHyprpicker->m_pLastSurface, CLICKPOS);
 
     switch (g_pHyprpicker->m_bSelectedOutputMode) {
+        case OUTPUT_CMYK:
+        {
+            // http://www.codeproject.com/KB/applications/xcmyk.aspx
+
+            float r = 1 - COL.r / 255.0f,
+                  g = 1 - COL.g / 255.0f,
+                  b = 1 - COL.b / 255.0f;
+            float k = fmin3(r, g, b),
+                  K = 1 - k;
+            float c = (r - k) / K,
+                  m = (g - k) / K,
+                  y = (b - k) / K;
+
+            c = std::round(c * 100);
+            m = std::round(m * 100);
+            y = std::round(y * 100);
+            k = std::round(k * 100);
+
+            if (g_pHyprpicker->m_bFancyOutput)
+                Debug::log(NONE, "\033[38;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", COL.r, COL.g, COL.b, c, m, y, k);
+            else
+                Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
+            break;
+        }
         case OUTPUT_HEX:
         {
             auto toHex = [](int i) -> std::string {
@@ -170,8 +201,8 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             float r = COL.r / 255.0f,
                   g = COL.g / 255.0f,
                   b = COL.b / 255.0f;
-            float max = (r > g && r > b) ? r : (g > b) ? g : b,
-                  min = (r < g && r < b) ? r : (g < b) ? g : b;
+            float max = fmax3(r, g, b),
+                  min = fmin3(r, g, b);
             float c = max - min;
 
             v = max;

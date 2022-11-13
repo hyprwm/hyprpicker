@@ -5,7 +5,8 @@
 #include "helpers/PoolBuffer.hpp"
 
 enum eOutputMode {
-    OUTPUT_HEX = 0,
+    OUTPUT_CMYK = 0,
+    OUTPUT_HEX,
     OUTPUT_RGB,
     OUTPUT_HSL,
     OUTPUT_HSV
