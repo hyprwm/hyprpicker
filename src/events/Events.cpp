@@ -181,7 +181,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 h = 60 * (0 + (g - b) / c);
             else if (v == g)
                 h = 60 * (2 + (b - r) / c);
-            else if (v == b)
+            else /* v == b */
                 h = 60 * (4 + (r - g) / c);
 
             float l_or_v;
