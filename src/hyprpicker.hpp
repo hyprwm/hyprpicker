@@ -6,7 +6,8 @@
 
 enum eOutputMode {
     OUTPUT_HEX = 0,
-    OUTPUT_RGB
+    OUTPUT_RGB,
+    OUTPUT_HSL
 };
 
 class CHyprpicker {

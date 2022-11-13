@@ -157,6 +157,41 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
             break;
         }
+        case OUTPUT_HSL:
+        {
+            // https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
+
+            float h, s, l;
+            float r = COL.r / 255.0f,
+                  g = COL.g / 255.0f,
+                  b = COL.b / 255.0f;
+            float max = (r > g && r > b) ? r : (g > b) ? g : b,
+                  min = (r < g && r < b) ? r : (g < b) ? g : b;
+            float c = max - min;
+
+            l = (max + min) / 2;
+            if (c == 0)
+                h = s = 0;
+            else {
+                s = (max - l) / std::min(l, 1 - l);
+                if (max == r)
+                    h = 60 * (0 + (g - b) / c);
+                else if (max == g)
+                    h = 60 * (2 + (b - r) / c);
+                else if (max == b)
+                    h = 60 * (4 + (r - g) / c);
+            }
+
+            h = std::round(h);
+            s = std::round(s * 100);
+            l = std::round(l * 100);
+
+            if (g_pHyprpicker->m_bFancyOutput)
+                Debug::log(NONE, "\033[38;2;%i;%i;%im%g %g%% %g%%\033[0m", COL.r, COL.g, COL.b, h, s, l);
+            else
+                Debug::log(NONE, "%g %g%% %g%%", h, s, l);
+            break;
+        }
     }
 
     g_pHyprpicker->finish();

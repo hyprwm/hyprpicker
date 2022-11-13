@@ -4,7 +4,7 @@
 
 static void help(void) {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
-        " -f | --format=fmt  | Specifies the output format (hex, rgb)\n" <<
+        " -f | --format=fmt  | Specifies the output format (hex, rgb, hsl)\n" <<
         " -n | --no-fancy    | Disables the \"fancy\" (aka. colored) outputting\n" <<
         " -h | --help        | Show this help message\n";
 }
@@ -31,6 +31,8 @@ int main(int argc, char** argv, char** envp) {
                     g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_HEX;
                 else if (strcmp(optarg, "rgb") == 0)
                     g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_RGB;
+                else if (strcmp(optarg, "hsl") == 0)
+                    g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_HSL;
                 else {
                     Debug::log(NONE, "Unrecognized format %s", optarg);
                     exit(1);
