@@ -10,7 +10,7 @@ Launch it. Click. That's it.
 
 ## Options
 
-`-f | --format=[fmt]` specifies the output format (`hex`, `rgb`)
+`-f | --format=[fmt]` specifies the output format (`cmyk`, `hex`, `rgb`, `hsl`, `hsv`)
 
 `-n | --no-fancy` disables the "fancy" (aka. colored) outputting
 
