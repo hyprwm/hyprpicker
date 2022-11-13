@@ -158,10 +158,15 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             break;
         }
         case OUTPUT_HSL:
+        case OUTPUT_HSV:
         {
             // https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
 
-            float h, s, l;
+            auto floatEq = [](float a, float b) -> bool {
+              return std::nextafter(a, std::numeric_limits<double>::lowest()) <= b && std::nextafter(a, std::numeric_limits<double>::max()) >= b;
+            };
+
+            float h, s, l, v;
             float r = COL.r / 255.0f,
                   g = COL.g / 255.0f,
                   b = COL.b / 255.0f;
@@ -169,27 +174,34 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                   min = (r < g && r < b) ? r : (g < b) ? g : b;
             float c = max - min;
 
-            l = (max + min) / 2;
+            v = max;
             if (c == 0)
-                h = s = 0;
-            else {
-                s = (max - l) / std::min(l, 1 - l);
-                if (max == r)
-                    h = 60 * (0 + (g - b) / c);
-                else if (max == g)
-                    h = 60 * (2 + (b - r) / c);
-                else if (max == b)
-                    h = 60 * (4 + (r - g) / c);
+                h = 0;
+            else if (v == r)
+                h = 60 * (0 + (g - b) / c);
+            else if (v == g)
+                h = 60 * (2 + (b - r) / c);
+            else if (v == b)
+                h = 60 * (4 + (r - g) / c);
+
+            float l_or_v;
+            if (g_pHyprpicker->m_bSelectedOutputMode == OUTPUT_HSL) {
+                l = (max + min) / 2;
+                s = (floatEq(l, 0.0f) || floatEq(l, 1.0f)) ? 0 : (v - l) / std::min(l, 1 - l);
+                l_or_v = std::round(l * 100);
+            } else {
+                v = max;
+                s = floatEq(v, 0.0f) ? 0 : c / v;
+                l_or_v = std::round(v * 100);
             }
 
             h = std::round(h);
             s = std::round(s * 100);
-            l = std::round(l * 100);
 
             if (g_pHyprpicker->m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%im%g %g%% %g%%\033[0m", COL.r, COL.g, COL.b, h, s, l);
+                Debug::log(NONE, "\033[38;2;%i;%i;%im%g %g%% %g%%\033[0m", COL.r, COL.g, COL.b, h, s, l_or_v);
             else
-                Debug::log(NONE, "%g %g%% %g%%", h, s, l);
+                Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
             break;
         }
     }
