@@ -23,7 +23,7 @@ int main(int argc, char** argv, char** envp) {
                 std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
                     " --format [fmt]  | Specifies the output format (hex, rgb)\n" <<
                     " --no-fancy      | Disables the \"fancy\" (aka. colored) outputting\n" <<
-                    " --autocopy      | Automatically copies the output to the clipboard\n" <<
+                    " --autocopy      | Automatically copies the output to the clipboard (requires wl-clipboard)\n" <<
                     " --help          | Show this help message\n";
                 exit(1);
             }
