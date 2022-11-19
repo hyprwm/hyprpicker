@@ -16,7 +16,7 @@ Launch it. Click. That's it.
 
 `-h | --help` prints a help message
 
-`--autocopy` automatically copies the output to the clipboard (requires [wl-clipboard](https://github.com/bugaevc/wl-clipboard))
+`-a | --autocopy` automatically copies the output to the clipboard (requires [wl-clipboard](https://github.com/bugaevc/wl-clipboard))
 
 # Building
 
