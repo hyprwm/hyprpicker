@@ -10,9 +10,11 @@ Launch it. Click. That's it.
 
 ## Options
 
-`--format [fmt]` to specify the output format (`hex`, `rgb`)
+`-f | --format=[fmt]` specifies the output format (`cmyk`, `hex`, `rgb`, `hsl`, `hsv`)
 
-`--no-fancy` disables the "fancy" (aka. colored) outputting
+`-n | --no-fancy` disables the "fancy" (aka. colored) outputting
+
+`-h | --help` prints a help message
 
 `--autocopy` automatically copies the output to the clipboard (requires [wl-clipboard](https://github.com/bugaevc/wl-clipboard))
 

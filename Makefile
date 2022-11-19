@@ -10,6 +10,8 @@ PKGS = wlroots wayland-server
 CFLAGS += $(foreach p,$(PKGS),$(shell pkg-config --cflags $(p)))
 LDLIBS += $(foreach p,$(PKGS),$(shell pkg-config --libs $(p)))
 
+default: all
+
 wlr-layer-shell-unstable-v1-protocol.h:
 	$(WAYLAND_SCANNER) client-header \
 		protocols/wlr-layer-shell-unstable-v1.xml $@
@@ -58,3 +60,8 @@ all:
 	make clear
 	make protocols
 	make release
+
+install:
+	mkdir -p ${DESTDIR}${PREFIX}/bin ${DESTDIR}${PREFIX}/share/man/man1
+	cp doc/hyprpicker.1 ${DESTDIR}${PREFIX}/share/man/man1
+	cp build/hyprpicker ${DESTDIR}${PREFIX}/bin

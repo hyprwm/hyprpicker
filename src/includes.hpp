@@ -33,6 +33,7 @@ extern "C" {
 #include <cairo.h>
 #include <cairo/cairo.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
