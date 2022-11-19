@@ -6,6 +6,7 @@ static void help(void) {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
         " -f | --format=fmt  | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n" <<
         " -n | --no-fancy    | Disables the \"fancy\" (aka. colored) outputting\n" <<
+        " -a | --autocopy    | Automatically copies the output to the clipboard (requires wl-clipboard)\n" <<
         " -h | --help        | Show this help message\n";
 }
 
@@ -18,10 +19,11 @@ int main(int argc, char** argv, char** envp) {
             {"format",   required_argument, NULL, 'f'},
             {"help",     no_argument,       NULL, 'h'},
             {"no-fancy", no_argument,       NULL, 'n'},
+            {"autocopy", no_argument,       NULL, 'a'},
             {NULL,       0,                 NULL,  0 }
         };
 
-        int c = getopt_long(argc, argv, ":f:hn", long_options, &option_index);
+        int c = getopt_long(argc, argv, ":f:hna", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -47,6 +49,9 @@ int main(int argc, char** argv, char** envp) {
                 exit(0);
             case 'n':
                 g_pHyprpicker->m_bFancyOutput = false;
+                break;
+            case 'a':
+                g_pHyprpicker->m_bAutoCopy = true;
                 break;
             default:
                 help();
