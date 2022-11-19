@@ -17,10 +17,13 @@ int main(int argc, char** argv, char** envp) {
                 continue;
             } else if (arg == "--no-fancy") {
                 g_pHyprpicker->m_bFancyOutput = false;
+            } else if (arg == "--autocopy") {
+                g_pHyprpicker->m_bAutoCopy = true;
             } else {
                 std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
                     " --format [fmt]  | Specifies the output format (hex, rgb)\n" <<
                     " --no-fancy      | Disables the \"fancy\" (aka. colored) outputting\n" <<
+                    " --autocopy      | Automatically copies the output to the clipboard\n" <<
                     " --help          | Show this help message\n";
                 exit(1);
             }

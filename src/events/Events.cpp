@@ -147,6 +147,8 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             else
                 Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
+            if (g_pHyprpicker->m_bAutoCopy)
+                Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
             break;
         }
         case OUTPUT_RGB:
@@ -155,6 +157,9 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "\033[38;2;%i;%i;%im %i %i %i\033[0m", COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
             else
                 Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
+
+            if (g_pHyprpicker->m_bAutoCopy)
+                Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
             break;
         }
     }
