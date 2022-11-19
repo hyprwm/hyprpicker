@@ -14,6 +14,8 @@ Launch it. Click. That's it.
 
 `--no-fancy` disables the "fancy" (aka. colored) outputting
 
+`--autocopy` automatically copies the output to the clipboard (requires [wl-clipboard](https://github.com/bugaevc/wl-clipboard))
+
 # Building
 
 ## Arch

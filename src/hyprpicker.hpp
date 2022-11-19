@@ -26,6 +26,8 @@ public:
 
     bool            m_bFancyOutput = true;
 
+    bool            m_bAutoCopy = false;
+
     bool            m_bRunning = true;
 
     std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
