@@ -4,9 +4,9 @@
 
 static void help(void) {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n" <<
+        " -a | --autocopy    | Automatically copies the output to the clipboard (requires wl-clipboard)\n" <<
         " -f | --format=fmt  | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n" <<
         " -n | --no-fancy    | Disables the \"fancy\" (aka. colored) outputting\n" <<
-        " -a | --autocopy    | Automatically copies the output to the clipboard (requires wl-clipboard)\n" <<
         " -h | --help        | Show this help message\n";
 }
 
@@ -16,10 +16,10 @@ int main(int argc, char** argv, char** envp) {
     while (true) {
         int option_index = 0;
         static struct option long_options[] = {
+            {"autocopy", no_argument,       NULL, 'a'},
             {"format",   required_argument, NULL, 'f'},
             {"help",     no_argument,       NULL, 'h'},
             {"no-fancy", no_argument,       NULL, 'n'},
-            {"autocopy", no_argument,       NULL, 'a'},
             {NULL,       0,                 NULL,  0 }
         };
 
