@@ -6,7 +6,7 @@
 .Nd wlroots-compatible wayland color picker
 .Sh SYNOPSIS
 .Nm
-.Op Fl nh
+.Op Fl anh
 .Op Fl f Ar fmt
 .Sh DESCRIPTION
 The
@@ -22,7 +22,14 @@ option.
 .Pp
 The options are as follows:
 .Bl -tag -width Ds
-.It Fl f Ns , Fl \-format Ns = Ns Ar fmt
+.It Fl a , Fl Fl autocopy
+Automatically copy the output of
+.Nm
+to the clipboard.
+This option requires that the
+.Xr wl-copy 1
+command is installed on system.
+.It Fl f Ar fmt , Fl Fl format Ns = Ns Ar fmt
 Select the format to output the selected pixels color in.
 The argument
 .Ar fmt
@@ -44,10 +51,10 @@ The available options are:
 .Pp
 The default format is
 .Ar hex .
-.It Fl n Ns , Fl \-no\-fancy
+.It Fl n , Fl Fl no-fancy
 Disable colored output.
 Default behavior is to color the output in the same color as the selected pixel.
-.It Fl h Ns , Fl \-help
+.It Fl h , Fl Fl help
 Display a help message and exit successfully from the program.
 .El
 .Sh ENVIRONMENT
@@ -70,7 +77,8 @@ function:
 .Sh SEE ALSO
 .Xr hyprctl 1 ,
 .Xr hyprland 1 ,
-.Xr sed 1
+.Xr sed 1 ,
+.Xr wl-copy 1
 .Pp
 .Lk https://github.com/hyprwm/hyprpicker "The Hyprpicker Sources"
 .Sh AUTHORS
