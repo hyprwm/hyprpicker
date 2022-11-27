@@ -160,6 +160,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
 
             if (g_pHyprpicker->m_bAutoCopy)
+                g_pHyprpicker->finish();
                 Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
             break;
         }
@@ -182,6 +183,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
             if (g_pHyprpicker->m_bAutoCopy)
+                g_pHyprpicker->finish();
                 Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
             break;
         }
@@ -193,6 +195,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
 
             if (g_pHyprpicker->m_bAutoCopy)
+                g_pHyprpicker->finish();
                 Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
             break;
         }
@@ -243,12 +246,14 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
 
             if (g_pHyprpicker->m_bAutoCopy)
+                g_pHyprpicker->finish();
                 Clipboard::copy("%g %g%% %g%%", h, s, l_or_v);
             break;
         }
     }
 
-    g_pHyprpicker->finish();
+    if (!g_pHyprpicker->m_bAutoCopy)
+        g_pHyprpicker->finish();
 }
 
 void Events::handleFrameDone(void *data, struct wl_callback *callback, uint32_t time) {
