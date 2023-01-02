@@ -78,6 +78,10 @@ void Events::handleCapabilities(void *data, wl_seat *wl_seat, uint32_t capabilit
         Debug::log(CRIT, "Hyprpicker cannot work without a pointer!");
         g_pHyprpicker->finish(1);
     }
+
+    if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
+        wl_keyboard_add_listener(wl_seat_get_keyboard(wl_seat), &keyboardListener, wl_seat);
+    }
 }
 
 void Events::handlePointerEnter(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
@@ -255,6 +259,33 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
     if (!g_pHyprpicker->m_bAutoCopy)
         g_pHyprpicker->finish();
 }
+
+void Events::handleKeyboardKeymap(void* data, wl_keyboard* wl_keyboard, uint format, int fd, uint size)
+{
+
+}
+
+void Events::handleKeyboardKey(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
+{
+    if(key == 1) // escape
+        g_pHyprpicker->finish();
+}
+
+void Events::handleKeyboardEnter(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface, wl_array* keys)
+{
+
+}
+
+void Events::handleKeyboardLeave(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface)
+{
+
+}
+
+void Events::handleKeyboardModifiers(void* data, wl_keyboard* wl_keyboard, uint serial, uint mods_depressed, uint mods_latched, uint mods_locked, uint group)
+{
+
+}
+
 
 void Events::handleFrameDone(void *data, struct wl_callback *callback, uint32_t time) {
     CLayerSurface* pLS = (CLayerSurface*)data;

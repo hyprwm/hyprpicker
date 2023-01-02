@@ -33,6 +33,16 @@ namespace Events {
 
     void handlePointerLeave(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface);
 
+    void handleKeyboardKeymap(void* data, wl_keyboard* wl_keyboard, uint format, int fd, uint size);
+
+    void handleKeyboardKey(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state);
+    
+    void handleKeyboardEnter(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface, wl_array* keys);
+
+    void handleKeyboardLeave(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface);
+
+    void handleKeyboardModifiers(void* data, wl_keyboard* wl_keyboard, uint serial, uint mods_depressed, uint mods_latched, uint mods_locked, uint group);
+
     void handleFrameDone(void *data, struct wl_callback *callback, uint32_t time);
 
     void handleBufferRelease(void *data, struct wl_buffer *wl_buffer);
@@ -54,6 +64,8 @@ namespace Events {
     inline const wl_seat_listener seatListener = { .capabilities = handleCapabilities };
 
     inline const wl_pointer_listener pointerListener = { .enter = handlePointerEnter, .leave = handlePointerLeave, .motion = handlePointerMotion, .button = handlePointerButton, .axis = handlePointerAxis };
+
+    inline const wl_keyboard_listener keyboardListener = { .keymap = handleKeyboardKeymap, .enter = handleKeyboardEnter,.leave = handleKeyboardLeave, .key = handleKeyboardKey, .modifiers = handleKeyboardModifiers };
 
     inline const wl_callback_listener frameListener = { .done = handleFrameDone };
 
