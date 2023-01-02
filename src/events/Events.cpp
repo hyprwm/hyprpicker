@@ -260,29 +260,24 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
         g_pHyprpicker->finish();
 }
 
-void Events::handleKeyboardKeymap(void* data, wl_keyboard* wl_keyboard, uint format, int fd, uint size)
-{
+void Events::handleKeyboardKeymap(void* data, wl_keyboard* wl_keyboard, uint format, int fd, uint size) {
 
 }
 
-void Events::handleKeyboardKey(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
-{
-    if(key == 1) // escape
+void Events::handleKeyboardKey(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
+    if (key == 1) // escape
         g_pHyprpicker->finish();
 }
 
-void Events::handleKeyboardEnter(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface, wl_array* keys)
-{
+void Events::handleKeyboardEnter(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface, wl_array* keys) {
 
 }
 
-void Events::handleKeyboardLeave(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface)
-{
+void Events::handleKeyboardLeave(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface) {
 
 }
 
-void Events::handleKeyboardModifiers(void* data, wl_keyboard* wl_keyboard, uint serial, uint mods_depressed, uint mods_latched, uint mods_locked, uint group)
-{
+void Events::handleKeyboardModifiers(void* data, wl_keyboard* wl_keyboard, uint serial, uint mods_depressed, uint mods_latched, uint mods_locked, uint group) {
 
 }
 
