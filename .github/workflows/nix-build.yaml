@@ -11,9 +11,9 @@ jobs:
       with:
         submodules: recursive
     - name: Install nix
-      uses: cachix/install-nix-action@v17
+      uses: cachix/install-nix-action@v18
       with:
-        install_url: https://releases.nixos.org/nix/nix-2.10.3/install
+        install_url: https://nixos.org/nix/install
         extra_nix_config: |
           auto-optimise-store = true
           experimental-features = nix-command flakes
