@@ -163,9 +163,9 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             else
                 Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
 
-            if (g_pHyprpicker->m_bAutoCopy)
+            if (!g_pHyprpicker->m_bAutoCopy)
                 g_pHyprpicker->finish();
-                Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
+            Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
             break;
         }
         case OUTPUT_HEX:
@@ -186,9 +186,9 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             else
                 Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
-            if (g_pHyprpicker->m_bAutoCopy)
+            if (!g_pHyprpicker->m_bAutoCopy)
                 g_pHyprpicker->finish();
-                Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+            Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
             break;
         }
         case OUTPUT_RGB:
@@ -198,9 +198,9 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             else
                 Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
 
-            if (g_pHyprpicker->m_bAutoCopy)
+            if (!g_pHyprpicker->m_bAutoCopy)
                 g_pHyprpicker->finish();
-                Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
+            Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
             break;
         }
         case OUTPUT_HSL:
@@ -249,14 +249,14 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
             else
                 Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
 
-            if (g_pHyprpicker->m_bAutoCopy)
+            if (!g_pHyprpicker->m_bAutoCopy)
                 g_pHyprpicker->finish();
-                Clipboard::copy("%g %g%% %g%%", h, s, l_or_v);
+            Clipboard::copy("%g %g%% %g%%", h, s, l_or_v);
             break;
         }
     }
 
-    if (!g_pHyprpicker->m_bAutoCopy)
+    if (g_pHyprpicker->m_bAutoCopy)
         g_pHyprpicker->finish();
 }
 
