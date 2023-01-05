@@ -344,7 +344,7 @@ CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
         unsigned char green;
         unsigned char red;
         unsigned char alpha;
-    }* px = (struct pixel*)(pLS->screenBuffer.data + (int)pix.y * (int)pLS->screenBuffer.pixelSize.x * 4 + (int)pix.x * 4);
+    }* px = (struct pixel*)((char*)pLS->screenBuffer.data + (int)pix.y * (int)pLS->screenBuffer.pixelSize.x * 4 + (int)pix.x * 4);
 
     return CColor{(uint8_t)px->red, (uint8_t)px->green, (uint8_t)px->blue, (uint8_t)px->alpha};
 }
