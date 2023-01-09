@@ -162,10 +162,10 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "\033[38;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", COL.r, COL.g, COL.b, c, m, y, k);
             else
                 Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
-
+            
             if (g_pHyprpicker->m_bAutoCopy)
-                g_pHyprpicker->finish();
                 Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
+            g_pHyprpicker->finish();
             break;
         }
         case OUTPUT_HEX:
@@ -187,8 +187,8 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
             if (g_pHyprpicker->m_bAutoCopy)
-                g_pHyprpicker->finish();
                 Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+            g_pHyprpicker->finish();
             break;
         }
         case OUTPUT_RGB:
@@ -199,8 +199,8 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
 
             if (g_pHyprpicker->m_bAutoCopy)
-                g_pHyprpicker->finish();
                 Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
+            g_pHyprpicker->finish();
             break;
         }
         case OUTPUT_HSL:
@@ -250,14 +250,13 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
 
             if (g_pHyprpicker->m_bAutoCopy)
-                g_pHyprpicker->finish();
                 Clipboard::copy("%g %g%% %g%%", h, s, l_or_v);
+            g_pHyprpicker->finish();
             break;
         }
     }
 
-    if (!g_pHyprpicker->m_bAutoCopy)
-        g_pHyprpicker->finish();
+    g_pHyprpicker->finish();
 }
 
 void Events::handleKeyboardKeymap(void* data, wl_keyboard* wl_keyboard, uint format, int fd, uint size) {
