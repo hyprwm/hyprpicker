@@ -162,7 +162,7 @@ void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint
                 Debug::log(NONE, "\033[38;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", COL.r, COL.g, COL.b, c, m, y, k);
             else
                 Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
-            
+
             if (g_pHyprpicker->m_bAutoCopy)
                 Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
             g_pHyprpicker->finish();
