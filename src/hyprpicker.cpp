@@ -35,8 +35,10 @@ void CHyprpicker::init() {
         //renderSurface(m_pLastSurface);
     }
 
-    wl_display_disconnect(m_pWLDisplay);
-    m_pWLDisplay = nullptr;
+    if (m_pWLDisplay) {
+        wl_display_disconnect(m_pWLDisplay);
+        m_pWLDisplay = nullptr;
+    }
 }
 
 void CHyprpicker::finish(int code) {
@@ -44,6 +46,11 @@ void CHyprpicker::finish(int code) {
         destroyBuffer(&ls->buffers[0]);
         destroyBuffer(&ls->buffers[1]);
         destroyBuffer(&ls->screenBuffer);
+    }
+
+    if (m_pWLDisplay) {
+        wl_display_disconnect(m_pWLDisplay);
+        m_pWLDisplay = nullptr;
     }
 
     exit(code);
