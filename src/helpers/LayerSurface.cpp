@@ -1,7 +1,7 @@
 #include "LayerSurface.hpp"
 
-#include "../hyprpicker.hpp"
 #include "../events/Events.hpp"
+#include "../hyprpicker.hpp"
 
 CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     m_pMonitor = pMonitor;
@@ -36,5 +36,6 @@ CLayerSurface::~CLayerSurface() {
     wl_surface_destroy(pSurface);
     zwlr_layer_surface_v1_destroy(pLayerSurface);
 
-    wl_display_flush(g_pHyprpicker->m_pWLDisplay);
+    if (g_pHyprpicker->m_pWLDisplay)
+        wl_display_flush(g_pHyprpicker->m_pWLDisplay);
 }

@@ -1,4 +1,5 @@
 #include "hyprpicker.hpp"
+
 #include "events/Events.hpp"
 
 void CHyprpicker::init() {
@@ -33,6 +34,9 @@ void CHyprpicker::init() {
     while (m_bRunning && wl_display_dispatch(m_pWLDisplay) != -1) {
         //renderSurface(m_pLastSurface);
     }
+
+    wl_display_disconnect(m_pWLDisplay);
+    m_pWLDisplay = nullptr;
 }
 
 void CHyprpicker::finish(int code) {
@@ -210,12 +214,11 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
                     std::swap(px->red, px->blue);
                 }
             }
-        }
-        break;
+        } break;
         default: {
             Debug::log(CRIT, "Unsupported format %i", pBuffer->format);
         }
-        g_pHyprpicker->finish(1);
+            g_pHyprpicker->finish(1);
     }
 }
 
@@ -271,7 +274,6 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         // | --------- |
         //
 
-    
         cairo_restore(PCAIRO);
         cairo_save(PCAIRO);
 
