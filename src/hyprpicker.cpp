@@ -48,6 +48,8 @@ void CHyprpicker::finish(int code) {
         destroyBuffer(&ls->screenBuffer);
     }
 
+    m_vLayerSurfaces.clear();
+
     if (m_pWLDisplay) {
         wl_display_disconnect(m_pWLDisplay);
         m_pWLDisplay = nullptr;
