@@ -44,7 +44,7 @@ public:
 
     void            renderSurface(CLayerSurface*, bool forceInactive = false);
 
-    void            createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t);
+    void            createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t, uint32_t);
     void            destroyBuffer(SPoolBuffer*);
     int             createPoolFile(size_t, std::string&);
     bool            setCloexec(const int&);

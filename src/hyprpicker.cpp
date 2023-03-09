@@ -65,8 +65,8 @@ void CHyprpicker::recheckACK() {
             zwlr_layer_surface_v1_ack_configure(ls->pLayerSurface, ls->ACKSerial);
 
             if (!ls->buffers[0].buffer) {
-                createBuffer(&ls->buffers[0], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888);
-                createBuffer(&ls->buffers[1], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888);
+                createBuffer(&ls->buffers[0], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
+                createBuffer(&ls->buffers[1], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
 
                 int XCURSOR_SIZE = 24;
                 if (getenv("XCURSOR_SIZE")) {
@@ -155,9 +155,8 @@ int CHyprpicker::createPoolFile(size_t size, std::string& name) {
     return FD;
 }
 
-void CHyprpicker::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32_t format) {
-    const uint STRIDE = w * 4;
-    const size_t SIZE = STRIDE * h;
+void CHyprpicker::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32_t format, uint32_t stride) {
+    const size_t SIZE = stride * h;
 
     std::string name;
     const auto FD = createPoolFile(SIZE, name);
@@ -169,7 +168,7 @@ void CHyprpicker::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint3
 
     const auto DATA = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
     const auto POOL = wl_shm_create_pool(g_pHyprpicker->m_pWLSHM, FD, SIZE);
-    pBuffer->buffer = wl_shm_pool_create_buffer(POOL, 0, w, h, STRIDE, format);
+    pBuffer->buffer = wl_shm_pool_create_buffer(POOL, 0, w, h, stride, format);
 
     wl_buffer_add_listener(pBuffer->buffer, &Events::bufferListener, pBuffer);
 
@@ -182,6 +181,7 @@ void CHyprpicker::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint3
     pBuffer->data = DATA;
     pBuffer->pixelSize = Vector2D(w, h);
     pBuffer->name = name;
+    pBuffer->stride = stride;
 }
 
 void CHyprpicker::destroyBuffer(SPoolBuffer* pBuffer) {
@@ -195,6 +195,10 @@ void CHyprpicker::destroyBuffer(SPoolBuffer* pBuffer) {
     pBuffer->surface = nullptr;
 
     unlink(pBuffer->name.c_str());
+
+    if (pBuffer->paddedData) {
+        free(pBuffer->paddedData);
+    }
 }
 
 void CHyprpicker::createSeat(wl_seat* pSeat) {
@@ -231,6 +235,63 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
     }
 }
 
+// Mallocs a new buffer, which needs to be free'd!
+void* convert24To32Buffer(SPoolBuffer* pBuffer) {
+    uint8_t* newBuffer = (uint8_t*)malloc((size_t)pBuffer->pixelSize.x * pBuffer->pixelSize.y * 4);
+    int newBufferStride = pBuffer->pixelSize.x * 4;
+    uint8_t* oldBuffer = (uint8_t*)pBuffer->data;
+
+    switch (pBuffer->format) {
+        case WL_SHM_FORMAT_BGR888: {
+            for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
+                for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
+                    struct pixel3 {
+                        // little-endian RGB
+                        unsigned char blue;
+                        unsigned char green;
+                        unsigned char red;
+                    }* srcPx = (struct pixel3*)(oldBuffer + y * pBuffer->stride + x * 3);
+                    struct pixel4 {
+                        // little-endian ARGB
+                        unsigned char blue;
+                        unsigned char green;
+                        unsigned char red;
+                        unsigned char alpha;
+                    }* dstPx = (struct pixel4*)(newBuffer + y * newBufferStride + x * 4);
+                    *dstPx = {srcPx->red, srcPx->green, srcPx->blue, 0xFF};
+                }
+            }
+        }
+        break;
+        case WL_SHM_FORMAT_RGB888: {
+            for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
+                for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
+                    struct pixel3 {
+                        // big-endian RGB
+                        unsigned char red;
+                        unsigned char green;
+                        unsigned char blue;
+                    }* srcPx = (struct pixel3*)(oldBuffer + y * pBuffer->stride + x * 3);
+                    struct pixel4 {
+                        // big-endian ARGB
+                        unsigned char alpha;
+                        unsigned char red;
+                        unsigned char green;
+                        unsigned char blue;
+                    }* dstPx = (struct pixel4*)(newBuffer + y * newBufferStride + x * 4);
+                    *dstPx = {0xFF, srcPx->red, srcPx->green, srcPx->blue};
+                }
+            }
+        }
+        break;
+        default: {
+            Debug::log(CRIT, "Unsupported format for 24bit buffer %i", pBuffer->format);
+        }
+        g_pHyprpicker->finish(1);
+    }
+    return newBuffer;
+}
+
 void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     const auto PBUFFER = getBufferForLS(pSurface);
 
@@ -238,8 +299,21 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         return;
 
     if (!pSurface->screenBuffer.surface) {
-        convertBuffer(&pSurface->screenBuffer);
-        pSurface->screenBuffer.surface = cairo_image_surface_create_for_data((unsigned char*)pSurface->screenBuffer.data, CAIRO_FORMAT_ARGB32, pSurface->screenBuffer.pixelSize.x, pSurface->screenBuffer.pixelSize.y, pSurface->screenBuffer.pixelSize.x * 4);
+        int bytesPerPixel = pSurface->screenBuffer.stride / (int)pSurface->screenBuffer.pixelSize.x;
+        void* data = pSurface->screenBuffer.data;
+        if (bytesPerPixel == 4) {
+            convertBuffer(&pSurface->screenBuffer);
+        }
+        else if (bytesPerPixel == 3) {
+            Debug::log(WARN, "24 bit formats are unsupported, hyprpicker may or may not work as intended!");
+            data = convert24To32Buffer(&pSurface->screenBuffer);
+            pSurface->screenBuffer.paddedData = data;
+        }
+        else {
+            Debug::log(CRIT, "Unsupported stride/bytes per pixel %i", bytesPerPixel);
+            g_pHyprpicker->finish(1);
+        }
+        pSurface->screenBuffer.surface = cairo_image_surface_create_for_data((unsigned char*)data, CAIRO_FORMAT_ARGB32, pSurface->screenBuffer.pixelSize.x, pSurface->screenBuffer.pixelSize.y, pSurface->screenBuffer.pixelSize.x * 4);
     }
 
     PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale, PBUFFER->pixelSize.x * 4);
@@ -350,12 +424,13 @@ void CHyprpicker::sendFrame(CLayerSurface* pSurface) {
 }
 
 CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
+    void* dataSrc = pLS->screenBuffer.paddedData ? pLS->screenBuffer.paddedData : pLS->screenBuffer.data;
     struct pixel {
         unsigned char blue;
         unsigned char green;
         unsigned char red;
         unsigned char alpha;
-    }* px = (struct pixel*)((char*)pLS->screenBuffer.data + (int)pix.y * (int)pLS->screenBuffer.pixelSize.x * 4 + (int)pix.x * 4);
+    }* px = (struct pixel*)((char*)dataSrc + (int)pix.y * (int)pLS->screenBuffer.pixelSize.x * 4 + (int)pix.x * 4);
 
     return CColor{(uint8_t)px->red, (uint8_t)px->green, (uint8_t)px->blue, (uint8_t)px->alpha};
 }
