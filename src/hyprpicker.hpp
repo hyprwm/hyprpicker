@@ -4,7 +4,8 @@
 #include "helpers/LayerSurface.hpp"
 #include "helpers/PoolBuffer.hpp"
 
-enum eOutputMode {
+enum eOutputMode
+{
     OUTPUT_CMYK = 0,
     OUTPUT_HEX,
     OUTPUT_RGB,
@@ -13,57 +14,58 @@ enum eOutputMode {
 };
 
 class CHyprpicker {
-public:
-    void            init();
+  public:
+    void                                        init();
 
-    std::mutex  m_mtTickMutex;
+    std::mutex                                  m_mtTickMutex;
 
-    wl_compositor*  m_pCompositor;
-    wl_display*     m_pWLDisplay;
-    wl_registry*    m_pWLRegistry;
-    wl_shm*         m_pWLSHM;
-    zwlr_layer_shell_v1* m_pLayerShell;
-    zwlr_screencopy_manager_v1* m_pSCMgr;
+    wl_compositor*                              m_pCompositor;
+    wl_display*                                 m_pWLDisplay;
+    wl_registry*                                m_pWLRegistry;
+    wl_shm*                                     m_pWLSHM;
+    zwlr_layer_shell_v1*                        m_pLayerShell;
+    zwlr_screencopy_manager_v1*                 m_pSCMgr;
 
-    eOutputMode     m_bSelectedOutputMode = OUTPUT_HEX;
+    eOutputMode                                 m_bSelectedOutputMode = OUTPUT_HEX;
 
-    bool            m_bFancyOutput = true;
+    bool                                        m_bFancyOutput = true;
 
-    bool            m_bAutoCopy = false;
+    bool                                        m_bAutoCopy       = false;
+    bool                                        m_bRenderInactive = false;
+    bool                                        m_bNoZoom         = false;
 
-    bool            m_bRunning = true;
+    bool                                        m_bRunning = true;
 
-    std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
+    std::vector<std::unique_ptr<SMonitor>>      m_vMonitors;
     std::vector<std::unique_ptr<CLayerSurface>> m_vLayerSurfaces;
 
-    void            createSeat(wl_seat*);
+    void                                        createSeat(wl_seat*);
 
-    CLayerSurface*  m_pLastSurface;
+    CLayerSurface*                              m_pLastSurface;
 
-    Vector2D        m_vLastCoords;
+    Vector2D                                    m_vLastCoords;
 
-    void            renderSurface(CLayerSurface*, bool forceInactive = false);
+    void                                        renderSurface(CLayerSurface*, bool forceInactive = false);
 
-    void            createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t, uint32_t);
-    void            destroyBuffer(SPoolBuffer*);
-    int             createPoolFile(size_t, std::string&);
-    bool            setCloexec(const int&);
+    void                                        createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t, uint32_t);
+    void                                        destroyBuffer(SPoolBuffer*);
+    int                                         createPoolFile(size_t, std::string&);
+    bool                                        setCloexec(const int&);
+    void                                        recheckACK();
 
-    void            recheckACK();
+    void                                        sendFrame(CLayerSurface*);
 
-    void            sendFrame(CLayerSurface*);
+    SPoolBuffer*                                getBufferForLS(CLayerSurface*);
 
-    SPoolBuffer*    getBufferForLS(CLayerSurface*);
+    void                                        convertBuffer(SPoolBuffer*);
 
-    void            convertBuffer(SPoolBuffer*);
+    void                                        markDirty();
 
-    void            markDirty();
+    void                                        finish(int code = 0);
 
-    void            finish(int code = 0);
+    CColor                                      getColorFromPixel(CLayerSurface*, Vector2D);
 
-    CColor          getColorFromPixel(CLayerSurface*, Vector2D);
-private:
-    
+  private:
 };
 
 inline std::unique_ptr<CHyprpicker> g_pHyprpicker;

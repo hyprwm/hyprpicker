@@ -65,8 +65,10 @@ void CHyprpicker::recheckACK() {
             zwlr_layer_surface_v1_ack_configure(ls->pLayerSurface, ls->ACKSerial);
 
             if (!ls->buffers[0].buffer) {
-                createBuffer(&ls->buffers[0], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
-                createBuffer(&ls->buffers[1], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
+                createBuffer(&ls->buffers[0], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888,
+                             ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
+                createBuffer(&ls->buffers[1], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888,
+                             ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
 
                 int XCURSOR_SIZE = 24;
                 if (getenv("XCURSOR_SIZE")) {
@@ -158,8 +160,8 @@ int CHyprpicker::createPoolFile(size_t size, std::string& name) {
 void CHyprpicker::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32_t format, uint32_t stride) {
     const size_t SIZE = stride * h;
 
-    std::string name;
-    const auto FD = createPoolFile(SIZE, name);
+    std::string  name;
+    const auto   FD = createPoolFile(SIZE, name);
 
     if (FD == -1) {
         Debug::log(CRIT, "Unable to create pool file!");
@@ -176,12 +178,12 @@ void CHyprpicker::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint3
 
     close(FD);
 
-    pBuffer->format = format;
-    pBuffer->size = SIZE;
-    pBuffer->data = DATA;
+    pBuffer->format    = format;
+    pBuffer->size      = SIZE;
+    pBuffer->data      = DATA;
     pBuffer->pixelSize = Vector2D(w, h);
-    pBuffer->name = name;
-    pBuffer->stride = stride;
+    pBuffer->name      = name;
+    pBuffer->stride    = stride;
 }
 
 void CHyprpicker::destroyBuffer(SPoolBuffer* pBuffer) {
@@ -190,8 +192,8 @@ void CHyprpicker::destroyBuffer(SPoolBuffer* pBuffer) {
     cairo_surface_destroy(pBuffer->surface);
     munmap(pBuffer->data, pBuffer->size);
 
-    pBuffer->buffer = nullptr;
-    pBuffer->cairo = nullptr;
+    pBuffer->buffer  = nullptr;
+    pBuffer->cairo   = nullptr;
     pBuffer->surface = nullptr;
 
     unlink(pBuffer->name.c_str());
@@ -208,8 +210,7 @@ void CHyprpicker::createSeat(wl_seat* pSeat) {
 void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
     switch (pBuffer->format) {
         case WL_SHM_FORMAT_ARGB8888:
-        case WL_SHM_FORMAT_XRGB8888:
-            break;
+        case WL_SHM_FORMAT_XRGB8888: break;
         case WL_SHM_FORMAT_ABGR8888:
         case WL_SHM_FORMAT_XBGR8888: {
             uint8_t* data = (uint8_t*)pBuffer->data;
@@ -237,9 +238,9 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
 
 // Mallocs a new buffer, which needs to be free'd!
 void* convert24To32Buffer(SPoolBuffer* pBuffer) {
-    uint8_t* newBuffer = (uint8_t*)malloc((size_t)pBuffer->pixelSize.x * pBuffer->pixelSize.y * 4);
-    int newBufferStride = pBuffer->pixelSize.x * 4;
-    uint8_t* oldBuffer = (uint8_t*)pBuffer->data;
+    uint8_t* newBuffer       = (uint8_t*)malloc((size_t)pBuffer->pixelSize.x * pBuffer->pixelSize.y * 4);
+    int      newBufferStride = pBuffer->pixelSize.x * 4;
+    uint8_t* oldBuffer       = (uint8_t*)pBuffer->data;
 
     switch (pBuffer->format) {
         case WL_SHM_FORMAT_BGR888: {
@@ -258,11 +259,10 @@ void* convert24To32Buffer(SPoolBuffer* pBuffer) {
                         unsigned char red;
                         unsigned char alpha;
                     }* dstPx = (struct pixel4*)(newBuffer + y * newBufferStride + x * 4);
-                    *dstPx = {srcPx->red, srcPx->green, srcPx->blue, 0xFF};
+                    *dstPx   = {srcPx->red, srcPx->green, srcPx->blue, 0xFF};
                 }
             }
-        }
-        break;
+        } break;
         case WL_SHM_FORMAT_RGB888: {
             for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
                 for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
@@ -279,15 +279,14 @@ void* convert24To32Buffer(SPoolBuffer* pBuffer) {
                         unsigned char green;
                         unsigned char blue;
                     }* dstPx = (struct pixel4*)(newBuffer + y * newBufferStride + x * 4);
-                    *dstPx = {0xFF, srcPx->red, srcPx->green, srcPx->blue};
+                    *dstPx   = {0xFF, srcPx->red, srcPx->green, srcPx->blue};
                 }
             }
-        }
-        break;
+        } break;
         default: {
             Debug::log(CRIT, "Unsupported format for 24bit buffer %i", pBuffer->format);
         }
-        g_pHyprpicker->finish(1);
+            g_pHyprpicker->finish(1);
     }
     return newBuffer;
 }
@@ -299,25 +298,25 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         return;
 
     if (!pSurface->screenBuffer.surface) {
-        int bytesPerPixel = pSurface->screenBuffer.stride / (int)pSurface->screenBuffer.pixelSize.x;
-        void* data = pSurface->screenBuffer.data;
+        int   bytesPerPixel = pSurface->screenBuffer.stride / (int)pSurface->screenBuffer.pixelSize.x;
+        void* data          = pSurface->screenBuffer.data;
         if (bytesPerPixel == 4) {
             convertBuffer(&pSurface->screenBuffer);
-        }
-        else if (bytesPerPixel == 3) {
+        } else if (bytesPerPixel == 3) {
             Debug::log(WARN, "24 bit formats are unsupported, hyprpicker may or may not work as intended!");
-            data = convert24To32Buffer(&pSurface->screenBuffer);
+            data                              = convert24To32Buffer(&pSurface->screenBuffer);
             pSurface->screenBuffer.paddedData = data;
-        }
-        else {
+        } else {
             Debug::log(CRIT, "Unsupported stride/bytes per pixel %i", bytesPerPixel);
             g_pHyprpicker->finish(1);
         }
-        pSurface->screenBuffer.surface = cairo_image_surface_create_for_data((unsigned char*)data, CAIRO_FORMAT_ARGB32, pSurface->screenBuffer.pixelSize.x, pSurface->screenBuffer.pixelSize.y, pSurface->screenBuffer.pixelSize.x * 4);
+        pSurface->screenBuffer.surface = cairo_image_surface_create_for_data((unsigned char*)data, CAIRO_FORMAT_ARGB32, pSurface->screenBuffer.pixelSize.x,
+                                                                             pSurface->screenBuffer.pixelSize.y, pSurface->screenBuffer.pixelSize.x * 4);
     }
 
-    PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale, PBUFFER->pixelSize.x * 4);
-    PBUFFER->cairo = cairo_create(PBUFFER->surface);
+    PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale,
+                                                           pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale, PBUFFER->pixelSize.x * 4);
+    PBUFFER->cairo   = cairo_create(PBUFFER->surface);
 
     const auto PCAIRO = PBUFFER->cairo;
 
@@ -328,7 +327,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     cairo_fill(PCAIRO);
 
     if (pSurface == g_pHyprpicker->m_pLastSurface && !forceInactive) {
-        const auto SCALEBUFS = Vector2D{pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y};
+        const auto SCALEBUFS   = Vector2D{pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y};
         const auto SCALECURSOR = Vector2D{
             g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
             g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
@@ -358,54 +357,70 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         //
 
         cairo_restore(PCAIRO);
-        cairo_save(PCAIRO);
+        if (!g_pHyprpicker->m_bNoZoom) {
+            cairo_save(PCAIRO);
 
-        const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
-        cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
+            const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
+            cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
 
-        cairo_scale(PCAIRO, 1, 1);
+            cairo_scale(PCAIRO, 1, 1);
 
-        cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 105 / SCALEBUFS.x, 0, 2 * M_PI);
-        cairo_clip(PCAIRO);
+            cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 105 / SCALEBUFS.x, 0, 2 * M_PI);
+            cairo_clip(PCAIRO);
 
-        cairo_fill(PCAIRO);
-        cairo_paint(PCAIRO);
+            cairo_fill(PCAIRO);
+            cairo_paint(PCAIRO);
 
-        cairo_surface_flush(PBUFFER->surface);
+            cairo_surface_flush(PBUFFER->surface);
 
-        cairo_restore(PCAIRO);
-        cairo_save(PCAIRO);
+            cairo_restore(PCAIRO);
+            cairo_save(PCAIRO);
 
-        const auto PATTERN = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
-        cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
-        cairo_matrix_t matrix;
-        cairo_matrix_init_identity(&matrix);
-        cairo_matrix_translate(&matrix, CLICKPOS.x + 0.5f, CLICKPOS.y + 0.5f);
-        cairo_matrix_scale(&matrix, 0.1f, 0.1f);
-        cairo_matrix_translate(&matrix, -CLICKPOS.x / SCALEBUFS.x - 0.5f, -CLICKPOS.y / SCALEBUFS.y - 0.5f);
-        cairo_pattern_set_matrix(PATTERN, &matrix);
-        cairo_set_source(PCAIRO, PATTERN);
-        cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
-        cairo_clip(PCAIRO);
-        cairo_paint(PCAIRO);
+            const auto PATTERN = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+            cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
+            cairo_matrix_t matrix;
+            cairo_matrix_init_identity(&matrix);
+            cairo_matrix_translate(&matrix, CLICKPOS.x + 0.5f, CLICKPOS.y + 0.5f);
+            cairo_matrix_scale(&matrix, 0.1f, 0.1f);
+            cairo_matrix_translate(&matrix, -CLICKPOS.x / SCALEBUFS.x - 0.5f, -CLICKPOS.y / SCALEBUFS.y - 0.5f);
+            cairo_pattern_set_matrix(PATTERN, &matrix);
+            cairo_set_source(PCAIRO, PATTERN);
+            cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
+            cairo_clip(PCAIRO);
+            cairo_paint(PCAIRO);
 
-        cairo_surface_flush(PBUFFER->surface);
+            cairo_surface_flush(PBUFFER->surface);
 
-        cairo_restore(PCAIRO);
+            cairo_restore(PCAIRO);
 
-        cairo_pattern_destroy(PATTERN);
-    } else {
+            cairo_pattern_destroy(PATTERN);
+        }
+    } else if (!g_pHyprpicker->m_bRenderInactive) {
         cairo_set_operator(PCAIRO, CAIRO_OPERATOR_SOURCE);
         cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
         cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
         cairo_fill(PCAIRO);
+    } else {
+        const auto SCALEBUFS  = Vector2D{pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y};
+        const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+        cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
+        cairo_matrix_t matrixPre;
+        cairo_matrix_init_identity(&matrixPre);
+        cairo_matrix_scale(&matrixPre, SCALEBUFS.x, SCALEBUFS.y);
+        cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
+        cairo_set_source(PCAIRO, PATTERNPRE);
+        cairo_paint(PCAIRO);
+
+        cairo_surface_flush(PBUFFER->surface);
+
+        cairo_pattern_destroy(PATTERNPRE);
     }
 
     sendFrame(pSurface);
     cairo_destroy(PCAIRO);
     cairo_surface_destroy(PBUFFER->surface);
 
-    PBUFFER->cairo = nullptr;
+    PBUFFER->cairo   = nullptr;
     PBUFFER->surface = nullptr;
 
     pSurface->rendered = true;
