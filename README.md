@@ -18,6 +18,10 @@ Launch it. Click. That's it.
 
 `-a | --autocopy` automatically copies the output to the clipboard (requires [wl-clipboard](https://github.com/bugaevc/wl-clipboard))
 
+`-r | --render-inactive` render (freeze) inactive displays too
+
+`-z | --no-zoom` disable the zoom lens
+
 # Building
 
 ## Arch
