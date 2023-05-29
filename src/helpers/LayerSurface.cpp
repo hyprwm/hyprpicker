@@ -23,7 +23,8 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     }
 
     zwlr_layer_surface_v1_set_size(pLayerSurface, 0, 0);
-    zwlr_layer_surface_v1_set_anchor(pLayerSurface, ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
+    zwlr_layer_surface_v1_set_anchor(
+        pLayerSurface, ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
     zwlr_layer_surface_v1_set_exclusive_zone(pLayerSurface, -1);
     zwlr_layer_surface_v1_set_keyboard_interactivity(pLayerSurface, true);
     zwlr_layer_surface_v1_add_listener(pLayerSurface, &Events::layersurfaceListener, this);
@@ -38,4 +39,8 @@ CLayerSurface::~CLayerSurface() {
 
     if (g_pHyprpicker->m_pWLDisplay)
         wl_display_flush(g_pHyprpicker->m_pWLDisplay);
+
+    g_pHyprpicker->destroyBuffer(&buffers[0]);
+    g_pHyprpicker->destroyBuffer(&buffers[1]);
+    g_pHyprpicker->destroyBuffer(&screenBuffer);
 }

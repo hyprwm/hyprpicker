@@ -276,7 +276,8 @@ void Events::handleBufferRelease(void* data, struct wl_buffer* wl_buffer) {
 void Events::handleSCBuffer(void* data, struct zwlr_screencopy_frame_v1* frame, uint32_t format, uint32_t width, uint32_t height, uint32_t stride) {
     const auto PLS = (CLayerSurface*)data;
 
-    g_pHyprpicker->createBuffer(&PLS->screenBuffer, width, height, format, stride);
+    if (!PLS->screenBuffer.buffer)
+        g_pHyprpicker->createBuffer(&PLS->screenBuffer, width, height, format, stride);
 
     zwlr_screencopy_frame_v1_copy(frame, PLS->screenBuffer.buffer);
 }

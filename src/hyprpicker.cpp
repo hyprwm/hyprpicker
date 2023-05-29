@@ -1,6 +1,11 @@
 #include "hyprpicker.hpp"
-
+#include <signal.h>
 #include "events/Events.hpp"
+
+void sigHandler(int sig) {
+    g_pHyprpicker->m_vLayerSurfaces.clear();
+    exit(0);
+}
 
 void CHyprpicker::init() {
     m_pWLDisplay = wl_display_connect(nullptr);
@@ -10,6 +15,8 @@ void CHyprpicker::init() {
         exit(1);
         return;
     }
+
+    signal(SIGTERM, sigHandler);
 
     m_pWLRegistry = wl_display_get_registry(m_pWLDisplay);
 
@@ -42,12 +49,6 @@ void CHyprpicker::init() {
 }
 
 void CHyprpicker::finish(int code) {
-    for (auto& ls : m_vLayerSurfaces) {
-        destroyBuffer(&ls->buffers[0]);
-        destroyBuffer(&ls->buffers[1]);
-        destroyBuffer(&ls->screenBuffer);
-    }
-
     m_vLayerSurfaces.clear();
 
     if (m_pWLDisplay) {
