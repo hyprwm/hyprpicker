@@ -20,3 +20,5 @@
 #ifndef GIT_DIRTY
 #define GIT_DIRTY "?"
 #endif
+
+#include <sys/types.h>
