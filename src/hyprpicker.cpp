@@ -76,7 +76,7 @@ void CHyprpicker::recheckACK() {
                     XCURSOR_SIZE = std::stoi(getenv("XCURSOR_SIZE"));
                 }
 
-                ls->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * ls->m_pMonitor->scale, m_pWLSHM), "left_ptr")->images[0];
+                ls->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * ls->m_pMonitor->scale, m_pWLSHM), "crosshair")->images[0];
             }
         }
     }
