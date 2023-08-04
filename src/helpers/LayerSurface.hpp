@@ -6,31 +6,32 @@
 struct SMonitor;
 
 class CLayerSurface {
-public:
+  public:
     CLayerSurface(SMonitor*);
     ~CLayerSurface();
 
-    SMonitor* m_pMonitor = nullptr;
+    SMonitor*              m_pMonitor = nullptr;
 
-    zwlr_layer_surface_v1* pLayerSurface = nullptr;
-    wl_surface* pSurface = nullptr;
-    wl_surface* pCursorSurface = nullptr;
+    zwlr_layer_surface_v1* pLayerSurface  = nullptr;
+    wl_surface*            pSurface       = nullptr;
+    wl_surface*            pCursorSurface = nullptr;
 
-    bool wantsACK = false;
-    uint32_t ACKSerial = 0;
-    bool working = false;
+    bool                   wantsACK  = false;
+    uint32_t               ACKSerial = 0;
+    bool                   working   = false;
 
-    int lastBuffer = 0;
-    SPoolBuffer buffers[2];
-    
-    SPoolBuffer screenBuffer;
-    uint32_t scflags = 0;
+    int                    lastBuffer = 0;
+    SPoolBuffer            buffers[2];
 
-    bool dirty = true;
+    SPoolBuffer            screenBuffer;
+    uint32_t               scflags            = 0;
+    uint32_t               screenBufferFormat = 0;
 
-    bool rendered = false;
+    bool                   dirty = true;
 
-    wl_callback* frame_callback = nullptr;
+    bool                   rendered = false;
 
-    wl_cursor_image* pCursorImg = nullptr;
+    wl_callback*           frame_callback = nullptr;
+
+    wl_cursor_image*       pCursorImg = nullptr;
 };

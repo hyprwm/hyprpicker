@@ -58,6 +58,7 @@ class CHyprpicker {
     SPoolBuffer*                                getBufferForLS(CLayerSurface*);
 
     void                                        convertBuffer(SPoolBuffer*);
+    void*                                       convert24To32Buffer(SPoolBuffer*);
 
     void                                        markDirty();
 

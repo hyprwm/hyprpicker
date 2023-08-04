@@ -238,7 +238,7 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
 }
 
 // Mallocs a new buffer, which needs to be free'd!
-void* convert24To32Buffer(SPoolBuffer* pBuffer) {
+void* CHyprpicker::convert24To32Buffer(SPoolBuffer* pBuffer) {
     uint8_t* newBuffer       = (uint8_t*)malloc((size_t)pBuffer->pixelSize.x * pBuffer->pixelSize.y * 4);
     int      newBufferStride = pBuffer->pixelSize.x * 4;
     uint8_t* oldBuffer       = (uint8_t*)pBuffer->data;
@@ -298,32 +298,17 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     if (!PBUFFER || !pSurface->screenBuffer.buffer)
         return;
 
-    if (!pSurface->screenBuffer.surface) {
-        int   bytesPerPixel = pSurface->screenBuffer.stride / (int)pSurface->screenBuffer.pixelSize.x;
-        void* data          = pSurface->screenBuffer.data;
-        if (bytesPerPixel == 4) {
-            convertBuffer(&pSurface->screenBuffer);
-        } else if (bytesPerPixel == 3) {
-            Debug::log(WARN, "24 bit formats are unsupported, hyprpicker may or may not work as intended!");
-            data                              = convert24To32Buffer(&pSurface->screenBuffer);
-            pSurface->screenBuffer.paddedData = data;
-        } else {
-            Debug::log(CRIT, "Unsupported stride/bytes per pixel %i", bytesPerPixel);
-            g_pHyprpicker->finish(1);
-        }
-        pSurface->screenBuffer.surface = cairo_image_surface_create_for_data((unsigned char*)data, CAIRO_FORMAT_ARGB32, pSurface->screenBuffer.pixelSize.x,
-                                                                             pSurface->screenBuffer.pixelSize.y, pSurface->screenBuffer.pixelSize.x * 4);
-    }
-
     PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale,
                                                            pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale, PBUFFER->pixelSize.x * 4);
-    PBUFFER->cairo   = cairo_create(PBUFFER->surface);
+
+    PBUFFER->cairo = cairo_create(PBUFFER->surface);
 
     const auto PCAIRO = PBUFFER->cairo;
 
     cairo_save(PCAIRO);
 
     cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
+
     cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
     cairo_fill(PCAIRO);
 
@@ -433,7 +418,7 @@ void CHyprpicker::sendFrame(CLayerSurface* pSurface) {
 
     wl_surface_attach(pSurface->pSurface, pSurface->lastBuffer == 0 ? pSurface->buffers[0].buffer : pSurface->buffers[1].buffer, 0, 0);
     wl_surface_set_buffer_scale(pSurface->pSurface, pSurface->m_pMonitor->scale);
-    wl_surface_damage_buffer(pSurface->pSurface, 0, 0, INT32_MAX, INT32_MAX);
+    wl_surface_damage_buffer(pSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
     wl_surface_commit(pSurface->pSurface);
 
     pSurface->dirty = false;

@@ -4,7 +4,9 @@
 
 void Events::geometry(void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model,
                       int32_t transform) {
-    // ignored
+    const auto PMONITOR = (SMonitor*)data;
+
+    PMONITOR->transform = (wl_output_transform)transform;
 }
 
 void Events::mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
@@ -38,9 +40,10 @@ void Events::ls_configure(void* data, zwlr_layer_surface_v1* surface, uint32_t s
     const auto PLAYERSURFACE = (CLayerSurface*)data;
 
     PLAYERSURFACE->m_pMonitor->size = Vector2D(width, height);
-    PLAYERSURFACE->ACKSerial        = serial;
-    PLAYERSURFACE->wantsACK         = true;
-    PLAYERSURFACE->working          = true;
+
+    PLAYERSURFACE->ACKSerial = serial;
+    PLAYERSURFACE->wantsACK  = true;
+    PLAYERSURFACE->working   = true;
 
     g_pHyprpicker->recheckACK();
 }
@@ -276,6 +279,8 @@ void Events::handleBufferRelease(void* data, struct wl_buffer* wl_buffer) {
 void Events::handleSCBuffer(void* data, struct zwlr_screencopy_frame_v1* frame, uint32_t format, uint32_t width, uint32_t height, uint32_t stride) {
     const auto PLS = (CLayerSurface*)data;
 
+    PLS->screenBufferFormat = format;
+
     if (!PLS->screenBuffer.buffer)
         g_pHyprpicker->createBuffer(&PLS->screenBuffer, width, height, format, stride);
 
@@ -288,12 +293,91 @@ void Events::handleSCFlags(void* data, struct zwlr_screencopy_frame_v1* frame, u
     PLS->scflags = flags;
 
     g_pHyprpicker->recheckACK();
-
-    g_pHyprpicker->renderSurface(PLS);
 }
 
-void Events::handleSCReady(void* data, struct zwlr_screencopy_frame_v1* frame, uint32_t tv_sec_hi, uint32_t tv_sec_lo, uint32_t tv_nsec) {
-    // ignore
+void Events::handleSCReady(void* lsdata, struct zwlr_screencopy_frame_v1* frame, uint32_t tv_sec_hi, uint32_t tv_sec_lo, uint32_t tv_nsec) {
+    const auto  PLS = (CLayerSurface*)lsdata;
+
+    SPoolBuffer newBuf;
+    Vector2D    transformedSize = PLS->screenBuffer.pixelSize;
+
+    if (PLS->m_pMonitor->transform % 2 == 1)
+        std::swap(transformedSize.x, transformedSize.y);
+
+    g_pHyprpicker->createBuffer(&newBuf, transformedSize.x, transformedSize.y, PLS->screenBufferFormat, transformedSize.x * 4);
+
+    int   bytesPerPixel = PLS->screenBuffer.stride / (int)PLS->screenBuffer.pixelSize.x;
+    void* data          = PLS->screenBuffer.data;
+    if (bytesPerPixel == 4)
+        g_pHyprpicker->convertBuffer(&PLS->screenBuffer);
+    else if (bytesPerPixel == 3) {
+        Debug::log(WARN, "24 bit formats are unsupported, hyprpicker may or may not work as intended!");
+        data                         = g_pHyprpicker->convert24To32Buffer(&PLS->screenBuffer);
+        PLS->screenBuffer.paddedData = data;
+    } else {
+        Debug::log(CRIT, "Unsupported stride/bytes per pixel %i", bytesPerPixel);
+        g_pHyprpicker->finish(1);
+    }
+
+    cairo_surface_t* oldSurface = cairo_image_surface_create_for_data((unsigned char*)data, CAIRO_FORMAT_ARGB32, PLS->screenBuffer.pixelSize.x, PLS->screenBuffer.pixelSize.y,
+                                                                      PLS->screenBuffer.pixelSize.x * 4);
+
+    cairo_surface_flush(oldSurface);
+
+    newBuf.surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, transformedSize.x, transformedSize.y);
+
+    const auto PCAIRO = cairo_create(newBuf.surface);
+
+    auto       cairoTransformMtx = [&](cairo_matrix_t* mtx) -> void {
+        const auto TR = PLS->m_pMonitor->transform % 4;
+
+        if (TR == 0)
+            return;
+
+        const auto TRFLIP = PLS->m_pMonitor->transform >= 4;
+
+        cairo_matrix_rotate(mtx, -M_PI_2 * (double)TR);
+
+        if (TR == 1)
+            cairo_matrix_translate(mtx, -transformedSize.x, 0);
+        else if (TR == 2)
+            cairo_matrix_translate(mtx, -transformedSize.x, -transformedSize.y);
+        else if (TR == 3)
+            cairo_matrix_translate(mtx, 0, -transformedSize.y);
+
+        // TODO: flipped
+    };
+
+    cairo_save(PCAIRO);
+
+    cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
+
+    cairo_rectangle(PCAIRO, 0, 0, 0xFFFF, 0xFFFF);
+    cairo_fill(PCAIRO);
+
+    const auto PATTERNPRE = cairo_pattern_create_for_surface(oldSurface);
+    cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
+    cairo_matrix_t matrixPre;
+    cairo_matrix_init_identity(&matrixPre);
+    cairo_matrix_scale(&matrixPre, 1.0, 1.0);
+    cairoTransformMtx(&matrixPre);
+    cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
+    cairo_set_source(PCAIRO, PATTERNPRE);
+    cairo_paint(PCAIRO);
+
+    cairo_surface_flush(newBuf.surface);
+
+    cairo_pattern_destroy(PATTERNPRE);
+
+    cairo_destroy(PCAIRO);
+
+    cairo_surface_destroy(oldSurface);
+
+    g_pHyprpicker->destroyBuffer(&PLS->screenBuffer);
+
+    PLS->screenBuffer = newBuf;
+
+    g_pHyprpicker->renderSurface(PLS);
 }
 
 void Events::handleSCFailed(void* data, struct zwlr_screencopy_frame_v1* frame) {
