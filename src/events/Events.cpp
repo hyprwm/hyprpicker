@@ -324,7 +324,7 @@ void Events::handleSCReady(void* lsdata, struct zwlr_screencopy_frame_v1* frame,
 
     cairo_surface_flush(oldSurface);
 
-    newBuf.surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, transformedSize.x, transformedSize.y);
+    newBuf.surface = cairo_image_surface_create_for_data((unsigned char*)newBuf.data, CAIRO_FORMAT_ARGB32, transformedSize.x, transformedSize.y, transformedSize.x * 4);
 
     const auto PCAIRO = cairo_create(newBuf.surface);
 
