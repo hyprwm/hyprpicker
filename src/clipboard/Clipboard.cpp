@@ -3,8 +3,8 @@
 #include "../includes.hpp"
 
 void Clipboard::copy(const char* fmt, ...) {
-    char buf[CLIPBOARDMESSAGESIZE] = "";
-    char* outputStr;
+    char    buf[CLIPBOARDMESSAGESIZE] = "";
+    char*   outputStr;
 
     va_list args;
     va_start(args, fmt);
@@ -13,7 +13,8 @@ void Clipboard::copy(const char* fmt, ...) {
 
     outputStr = strdup(buf);
 
-    execlp("wl-copy", "wl-copy", outputStr, NULL);
+    if (fork() == 0)
+        execlp("wl-copy", "wl-copy", outputStr, NULL);
 
     free(outputStr);
 }
