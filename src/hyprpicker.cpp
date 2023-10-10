@@ -8,6 +8,10 @@ void sigHandler(int sig) {
 }
 
 void CHyprpicker::init() {
+    m_pXKBContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    if (!m_pXKBContext)
+        Debug::log(ERR, "Failed to create xkb context");
+
     m_pWLDisplay = wl_display_connect(nullptr);
 
     if (!m_pWLDisplay) {

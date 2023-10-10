@@ -11,6 +11,7 @@
   libselinux,
   libsepol,
   libthai,
+  libxkbcommon,
   pango,
   pcre,
   utillinux,
@@ -50,6 +51,7 @@ stdenv.mkDerivation {
     wayland-scanner
     wlroots
     libXdmcp
+    libxkbcommon
     utillinux
   ];
 
