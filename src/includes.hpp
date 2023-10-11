@@ -40,6 +40,7 @@ extern "C" {
 #include <sys/mman.h>
 #include <unistd.h>
 #include <wayland-client.h>
+#include <xkbcommon/xkbcommon.h>
 
 #include <algorithm>
 #include <filesystem>

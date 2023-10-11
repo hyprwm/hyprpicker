@@ -246,10 +246,46 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
     g_pHyprpicker->finish();
 }
 
-void Events::handleKeyboardKeymap(void* data, wl_keyboard* wl_keyboard, uint format, int fd, uint size) {}
+void Events::handleKeyboardKeymap(void* data, wl_keyboard* wl_keyboard, uint format, int fd, uint size) {
+    if (!g_pHyprpicker->m_pXKBContext)
+        return;
+
+    if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
+        Debug::log(ERR, "Could not recognise keymap format");
+        return;
+    }
+
+    const char* buf = (const char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+    if (buf == MAP_FAILED) {
+        Debug::log(ERR, "Failed to mmap xkb keymap: %d", errno);
+        return;
+    }
+
+    g_pHyprpicker->m_pXKBKeymap = xkb_keymap_new_from_buffer(g_pHyprpicker->m_pXKBContext, buf, size - 1, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+    munmap((void*)buf, size);
+    close(fd);
+
+    if (!g_pHyprpicker->m_pXKBKeymap) {
+        Debug::log(ERR, "Failed to compile xkb keymap");
+        return;
+    }
+
+    g_pHyprpicker->m_pXKBState = xkb_state_new(g_pHyprpicker->m_pXKBKeymap);
+    if (!g_pHyprpicker->m_pXKBState) {
+        Debug::log(ERR, "Failed to create xkb state");
+        return;
+    }
+}
 
 void Events::handleKeyboardKey(void* data, struct wl_keyboard* keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
-    if (key == 1) // escape
+    if (state != WL_KEYBOARD_KEY_STATE_PRESSED)
+        return;
+
+    if (g_pHyprpicker->m_pXKBState) {
+        if (xkb_state_key_get_one_sym(g_pHyprpicker->m_pXKBState, key + 8) == XKB_KEY_Escape)
+            g_pHyprpicker->finish();
+    } else if (key == 1) // Assume keycode 1 is escape
         g_pHyprpicker->finish();
 }
 
@@ -257,7 +293,12 @@ void Events::handleKeyboardEnter(void* data, wl_keyboard* wl_keyboard, uint seri
 
 void Events::handleKeyboardLeave(void* data, wl_keyboard* wl_keyboard, uint serial, wl_surface* surface) {}
 
-void Events::handleKeyboardModifiers(void* data, wl_keyboard* wl_keyboard, uint serial, uint mods_depressed, uint mods_latched, uint mods_locked, uint group) {}
+void Events::handleKeyboardModifiers(void* data, wl_keyboard* wl_keyboard, uint serial, uint mods_depressed, uint mods_latched, uint mods_locked, uint group) {
+    if (!g_pHyprpicker->m_pXKBState)
+        return;
+
+    xkb_state_update_mask(g_pHyprpicker->m_pXKBState, mods_depressed, mods_latched, mods_locked, 0, 0, group);
+}
 
 void Events::handleFrameDone(void* data, struct wl_callback* callback, uint32_t time) {
     CLayerSurface* pLS = (CLayerSurface*)data;

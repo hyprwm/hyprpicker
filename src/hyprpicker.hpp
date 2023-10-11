@@ -26,6 +26,10 @@ class CHyprpicker {
     zwlr_layer_shell_v1*                        m_pLayerShell;
     zwlr_screencopy_manager_v1*                 m_pSCMgr;
 
+    xkb_context*                                m_pXKBContext = nullptr;
+    xkb_keymap*                                 m_pXKBKeymap  = nullptr;
+    xkb_state*                                  m_pXKBState   = nullptr;
+
     eOutputMode                                 m_bSelectedOutputMode = OUTPUT_HEX;
 
     bool                                        m_bFancyOutput = true;
