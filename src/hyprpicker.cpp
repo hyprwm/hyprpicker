@@ -234,6 +234,27 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
                 }
             }
         } break;
+        case WL_SHM_FORMAT_XRGB2101010:
+        case WL_SHM_FORMAT_XBGR2101010: {
+            uint8_t*   data = (uint8_t*)pBuffer->data;
+
+            const bool FLIP = pBuffer->format == WL_SHM_FORMAT_XBGR2101010;
+
+            for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
+                for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
+                    uint32_t * px =  (uint32_t*) (data + y * (int)pBuffer->pixelSize.x * 4 + x * 4);
+
+                    // conv to 8 bit
+                    uint8_t R = (uint8_t)std::round((255.0 * (((*px) & 0b00000000000000000000001111111111) >> 0) / 1023.0));
+                    uint8_t G = (uint8_t)std::round((255.0 * (((*px) & 0b00000000000011111111110000000000) >> 10) / 1023.0));
+                    uint8_t B = (uint8_t)std::round((255.0 * (((*px) & 0b00111111111100000000000000000000) >> 20) / 1023.0));
+                    uint8_t A = (uint8_t)std::round((255.0 * (((*px) & 0b11000000000000000000000000000000) >> 30) / 3.0));
+
+                    // write 8-bit values
+                    *px = ((FLIP ? B : R) << 0) + (G << 8) + ((FLIP ? R : B) << 16) + (A << 24);
+                  }
+            }
+        } break;
         default: {
             Debug::log(CRIT, "Unsupported format %i", pBuffer->format);
         }
