@@ -96,6 +96,9 @@ void Events::handlePointerEnter(void* data, struct wl_pointer* wl_pointer, uint3
         if (ls->pSurface == surface) {
             g_pHyprpicker->m_pLastSurface = ls.get();
 
+            if (!ls->pCursorImg)
+                break;
+
             wl_surface_set_buffer_scale(ls->pCursorSurface, ls->m_pMonitor->scale);
             wl_surface_attach(ls->pCursorSurface, wl_cursor_image_get_buffer(ls->pCursorImg), 0, 0);
             wl_pointer_set_cursor(wl_pointer, serial, ls->pCursorSurface, ls->pCursorImg->hotspot_x / ls->m_pMonitor->scale, ls->pCursorImg->hotspot_y / ls->m_pMonitor->scale);

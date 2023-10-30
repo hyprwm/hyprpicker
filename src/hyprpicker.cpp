@@ -80,7 +80,14 @@ void CHyprpicker::recheckACK() {
                     XCURSOR_SIZE = std::stoi(getenv("XCURSOR_SIZE"));
                 }
 
-                ls->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * ls->m_pMonitor->scale, m_pWLSHM), "crosshair")->images[0];
+                const auto THEME  = wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * ls->m_pMonitor->scale, m_pWLSHM);
+                auto       cursor = wl_cursor_theme_get_cursor(THEME, "crosshair");
+
+                if (!cursor)
+                    cursor = wl_cursor_theme_get_cursor(THEME, "left_ptr");
+
+                if (cursor)
+                    ls->pCursorImg = cursor->images[0];
             }
         }
     }
@@ -242,7 +249,7 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
 
             for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
                 for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
-                    uint32_t * px =  (uint32_t*) (data + y * (int)pBuffer->pixelSize.x * 4 + x * 4);
+                    uint32_t* px = (uint32_t*)(data + y * (int)pBuffer->pixelSize.x * 4 + x * 4);
 
                     // conv to 8 bit
                     uint8_t R = (uint8_t)std::round((255.0 * (((*px) & 0b00000000000000000000001111111111) >> 0) / 1023.0));
@@ -252,7 +259,7 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
 
                     // write 8-bit values
                     *px = ((FLIP ? B : R) << 0) + (G << 8) + ((FLIP ? R : B) << 16) + (A << 24);
-                  }
+                }
             }
         } break;
         default: {
