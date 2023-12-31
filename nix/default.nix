@@ -7,6 +7,7 @@
   cairo,
   fribidi,
   libdatrie,
+  libGL,
   libjpeg,
   libselinux,
   libsepol,
@@ -40,6 +41,7 @@ stdenv.mkDerivation {
     cairo
     fribidi
     libdatrie
+    libGL
     libjpeg
     libselinux
     libsepol
