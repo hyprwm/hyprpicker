@@ -12,38 +12,6 @@ LDLIBS += $(foreach p,$(PKGS),$(shell pkg-config --libs $(p)))
 
 default: all
 
-wlr-layer-shell-unstable-v1-protocol.h:
-	$(WAYLAND_SCANNER) client-header \
-		protocols/wlr-layer-shell-unstable-v1.xml $@
-
-wlr-layer-shell-unstable-v1-protocol.c:
-	$(WAYLAND_SCANNER) private-code \
-		protocols/wlr-layer-shell-unstable-v1.xml $@
-
-wlr-layer-shell-unstable-v1-protocol.o: wlr-layer-shell-unstable-v1-protocol.h
-
-wlr-screencopy-unstable-v1-protocol.h:
-	$(WAYLAND_SCANNER) client-header \
-		protocols/wlr-screencopy-unstable-v1.xml $@
-
-wlr-screencopy-unstable-v1-protocol.c:
-	$(WAYLAND_SCANNER) private-code \
-		protocols/wlr-screencopy-unstable-v1.xml $@
-
-wlr-screencopy-unstable-v1-protocol.o: wlr-screencopy-unstable-v1-protocol.h
-
-xdg-shell-protocol.h:
-	$(WAYLAND_SCANNER) client-header \
-		$(WAYLAND_PROTOCOLS)/stable/xdg-shell/xdg-shell.xml $@
-
-xdg-shell-protocol.c:
-	$(WAYLAND_SCANNER) private-code \
-		$(WAYLAND_PROTOCOLS)/stable/xdg-shell/xdg-shell.xml $@
-
-xdg-shell-protocol.o: xdg-shell-protocol.h
-
-protocols: wlr-layer-shell-unstable-v1-protocol.o wlr-screencopy-unstable-v1-protocol.o xdg-shell-protocol.o
-
 clear:
 	rm -rf build
 	rm -f *.o *-protocol.h *-protocol.c
@@ -58,7 +26,6 @@ debug:
 
 all:
 	make clear
-	make protocols
 	make release
 
 install:

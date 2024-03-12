@@ -3,7 +3,6 @@
   stdenv,
   pkg-config,
   cmake,
-  ninja,
   cairo,
   fribidi,
   libdatrie,
@@ -15,6 +14,7 @@
   libxkbcommon,
   pango,
   pcre,
+  pcre2,
   utillinux,
   wayland,
   wayland-protocols,
@@ -27,13 +27,16 @@
 stdenv.mkDerivation {
   pname = "hyprpicker" + lib.optionalString debug "-debug";
   inherit version;
+
   src = ../.;
 
-  cmakeFlags = lib.optional debug "-DCMAKE_BUILD_TYPE=Debug";
+  cmakeBuildType =
+    if debug
+    then "Debug"
+    else "Release";
 
   nativeBuildInputs = [
     cmake
-    ninja
     pkg-config
   ];
 
@@ -48,6 +51,7 @@ stdenv.mkDerivation {
     libthai
     pango
     pcre
+    pcre2
     wayland
     wayland-protocols
     wayland-scanner
@@ -57,37 +61,11 @@ stdenv.mkDerivation {
     utillinux
   ];
 
-  configurePhase = ''
-    runHook preConfigure
-
-    make protocols
-
-    runHook postConfigure
-  '';
-
-  buildPhase = ''
-    runHook preBuild
-
-    make release
-
-    runHook postBuild
-  '';
-
-  installPhase = ''
-    runHook preInstall
-
-    mkdir -p $out/{bin,share/licenses}
-
-    install -Dm755 build/hyprpicker -t $out/bin
-    install -Dm644 LICENSE -t $out/share/licenses/hyprpicker
-
-    runHook postInstall
-  '';
-
   meta = with lib; {
     homepage = "https://github.com/hyprwm/hyprpicker";
     description = "A wlroots-compatible Wayland color picker that does not suck";
     license = licenses.bsd3;
     platforms = platforms.linux;
+    mainProgram = "hyprpicker";
   };
 }
