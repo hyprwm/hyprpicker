@@ -61,6 +61,11 @@ stdenv.mkDerivation {
     utillinux
   ];
 
+  outputs = [
+    "out"
+    "man"
+  ];
+
   meta = with lib; {
     homepage = "https://github.com/hyprwm/hyprpicker";
     description = "A wlroots-compatible Wayland color picker that does not suck";
