@@ -16,15 +16,22 @@
     ];
     pkgsFor = nixpkgs.legacyPackages;
     mkDate = longDate: (lib.concatStringsSep "-" [
-      (__substring 0 4 longDate)
-      (__substring 4 2 longDate)
-      (__substring 6 2 longDate)
+      (builtins.substring 0 4 longDate)
+      (builtins.substring 4 2 longDate)
+      (builtins.substring 6 2 longDate)
     ]);
   in {
     overlays.default = _: prev: rec {
       hyprpicker = prev.callPackage ./nix/default.nix {
         stdenv = prev.gcc12Stdenv;
         version = "0.pre" + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
+        wayland-protocols = prev.wayland-protocols.overrideAttrs (self: super: {
+          version = "1.34";
+          src = prev.fetchurl {
+            url = "https://gitlab.freedesktop.org/wayland/${self.pname}/-/releases/${self.version}/downloads/${self.pname}-${self.version}.tar.xz";
+            hash = "sha256-xZsnys2F9guvTuX4DfXA0Vdg6taiQysAq34uBXTcr+s=";
+          };
+        });
         inherit (prev.xorg) libXdmcp;
       };
       hyprpicker-debug = hyprpicker.override {debug = true;};
