@@ -151,7 +151,7 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
             // http://www.codeproject.com/KB/applications/xcmyk.aspx
 
             float r = 1 - COL.r / 255.0f, g = 1 - COL.g / 255.0f, b = 1 - COL.b / 255.0f;
-            float k = fmin3(r, g, b), K = 1 - k;
+            float k = fmin3(r, g, b), K = (k == 1) ? 1 : 1 - k;
             float c = (r - k) / K, m = (g - k) / K, y = (b - k) / K;
 
             c = std::round(c * 100);
