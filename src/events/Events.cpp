@@ -137,6 +137,10 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
     auto fmax3 = [](float a, float b, float c) -> float { return (a > b && a > c) ? a : (b > c) ? b : c; };
     auto fmin3 = [](float a, float b, float c) -> float { return (a < b && a < c) ? a : (b < c) ? b : c; };
 
+    // relative brightness of a color
+    // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
+    const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
+
     // get the px and print it
     const auto SCALE = Vector2D{
         g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
@@ -145,6 +149,10 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
     const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALE.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALE.y};
 
     const auto COL = g_pHyprpicker->getColorFromPixel(g_pHyprpicker->m_pLastSurface, CLICKPOS);
+
+    // threshold: (lumi_white + 0.05) / (x + 0.05) == (x + 0.05) / (lumi_black + 0.05)
+    // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
+    const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
 
     switch (g_pHyprpicker->m_bSelectedOutputMode) {
         case OUTPUT_CMYK: {
@@ -160,7 +168,7 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
             k = std::round(k * 100);
 
             if (g_pHyprpicker->m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", COL.r, COL.g, COL.b, c, m, y, k);
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
             else
                 Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
 
@@ -182,7 +190,8 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
             };
 
             if (g_pHyprpicker->m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%im#%s%s%s\033[0m", COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im#%s%s%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(),
+                           toHex(COL.b).c_str());
             else
                 Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
@@ -193,7 +202,7 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
         }
         case OUTPUT_RGB: {
             if (g_pHyprpicker->m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%im%i %i %i\033[0m", COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%i %i %i\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
             else
                 Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
 
@@ -240,7 +249,7 @@ void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint
             s = std::round(s * 100);
 
             if (g_pHyprpicker->m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%im%g %g%% %g%%\033[0m", COL.r, COL.g, COL.b, h, s, l_or_v);
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l_or_v);
             else
                 Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
 
