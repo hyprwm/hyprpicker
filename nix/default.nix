@@ -19,7 +19,6 @@
   wayland,
   wayland-protocols,
   wayland-scanner,
-  wlroots,
   libXdmcp,
   debug ? false,
   version ? "git",
@@ -55,7 +54,6 @@ stdenv.mkDerivation {
     wayland
     wayland-protocols
     wayland-scanner
-    wlroots
     libXdmcp
     libxkbcommon
     utillinux
