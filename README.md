@@ -30,6 +30,12 @@ Launch it. Click. That's it.
 
 ## Manual
 
+Install build dependencies (Debian):
+
+```sh
+apt install --no-install-recommends -y cmake g++ make pkg-config libpango1.0-dev libjpeg-dev libwayland-dev wayland-protocols libxkbcommon-dev libgles2-mesa-dev
+```
+
 Building is done via CMake:
 
 ```sh
