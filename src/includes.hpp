@@ -28,8 +28,6 @@ extern "C" {
 #undef namespace
 #undef static
 
-#include <GLES3/gl32.h>
-#include <GLES3/gl3ext.h>
 #include <assert.h>
 #include <cairo.h>
 #include <cairo/cairo.h>
