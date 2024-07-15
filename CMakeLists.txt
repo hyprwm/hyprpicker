@@ -98,8 +98,6 @@ include(CPack)
 target_link_libraries(hyprpicker PkgConfig::deps)
 
 target_link_libraries(hyprpicker
-        OpenGL
-        GLESv2
         pthread
         ${CMAKE_THREAD_LIBS_INIT}
         wayland-cursor
