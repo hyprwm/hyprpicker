@@ -30,11 +30,15 @@ Launch it. Click. That's it.
 
 ## Manual
 
-Install build dependencies (Debian):
-
-```sh
-apt install --no-install-recommends -y cmake g++ make pkg-config libpango1.0-dev libjpeg-dev libwayland-dev wayland-protocols libxkbcommon-dev
-```
+Install dependencies:
+ - cmake
+ - pkg-config
+ - pango
+ - cairo
+ - wayland
+ - wayland-protocols
+ - hyprutils
+ - xkbcommon
 
 Building is done via CMake:
 

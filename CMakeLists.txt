@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.12)
 project(hyprpicker 
     DESCRIPTION "A blazing fast wayland wallpaper utility"
 )
@@ -72,7 +72,7 @@ add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-m
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols xkbcommon cairo pango pangocairo libjpeg)
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols xkbcommon cairo pango pangocairo libjpeg hyprutils>=0.2.0)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 

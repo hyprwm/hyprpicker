@@ -1,7 +1,6 @@
 #pragma once
 
 #include "debug/Log.hpp"
-#include "helpers/Vector2D.hpp"
 #include "includes.hpp"
 #include "helpers/Monitor.hpp"
 #include "helpers/Color.hpp"
@@ -22,3 +21,6 @@
 #endif
 
 #include <sys/types.h>
+
+#include <hyprutils/math/Vector2D.hpp>
+using namespace Hyprutils::Math;

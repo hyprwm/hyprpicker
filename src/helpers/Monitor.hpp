@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../defines.hpp"
+#include <hyprutils/math/Vector2D.hpp>
+using namespace Hyprutils::Math;
 
 struct SMonitor {
     std::string               name         = "";

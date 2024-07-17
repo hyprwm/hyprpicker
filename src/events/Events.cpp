@@ -39,7 +39,7 @@ void Events::description(void* data, wl_output* wl_output, const char* descripti
 void Events::ls_configure(void* data, zwlr_layer_surface_v1* surface, uint32_t serial, uint32_t width, uint32_t height) {
     const auto PLAYERSURFACE = (CLayerSurface*)data;
 
-    PLAYERSURFACE->m_pMonitor->size = Vector2D(width, height);
+    PLAYERSURFACE->m_pMonitor->size = Vector2D((int)width, (int)height);
 
     PLAYERSURFACE->ACKSerial = serial;
     PLAYERSURFACE->wantsACK  = true;
@@ -82,9 +82,7 @@ void Events::handleCapabilities(void* data, wl_seat* wl_seat, uint32_t capabilit
     if (capabilities & WL_SEAT_CAPABILITY_POINTER) {
         const auto POINTER = wl_seat_get_pointer(wl_seat);
         wl_pointer_add_listener(POINTER, &pointerListener, wl_seat);
-        g_pHyprpicker->m_pCursorShapeDevice = (g_pHyprpicker->m_pCursorShape) ?
-            wp_cursor_shape_manager_v1_get_pointer(g_pHyprpicker->m_pCursorShape, POINTER) :
-            nullptr;
+        g_pHyprpicker->m_pCursorShapeDevice = (g_pHyprpicker->m_pCursorShape) ? wp_cursor_shape_manager_v1_get_pointer(g_pHyprpicker->m_pCursorShape, POINTER) : nullptr;
     } else {
         Debug::log(CRIT, "Hyprpicker cannot work without a pointer!");
         g_pHyprpicker->finish(1);
@@ -396,8 +394,6 @@ void Events::handleSCReady(void* lsdata, struct zwlr_screencopy_frame_v1* frame,
 
         if (TR == 0)
             return;
-
-        const auto TRFLIP = PLS->m_pMonitor->transform >= 4;
 
         cairo_matrix_rotate(mtx, -M_PI_2 * (double)TR);
 
