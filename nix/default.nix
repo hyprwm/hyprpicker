@@ -5,6 +5,7 @@
   cmake,
   cairo,
   fribidi,
+  hyprutils,
   libdatrie,
   libGL,
   libjpeg,
@@ -19,7 +20,7 @@
   wayland,
   wayland-protocols,
   wayland-scanner,
-  libXdmcp,
+  xorg,
   debug ? false,
   version ? "git",
 }:
@@ -42,21 +43,22 @@ stdenv.mkDerivation {
   buildInputs = [
     cairo
     fribidi
+    hyprutils
     libdatrie
     libGL
     libjpeg
     libselinux
     libsepol
     libthai
+    libxkbcommon
     pango
     pcre
     pcre2
+    utillinux
     wayland
     wayland-protocols
     wayland-scanner
-    libXdmcp
-    libxkbcommon
-    utillinux
+    xorg.libXdmcp
   ];
 
   outputs = [
