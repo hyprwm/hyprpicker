@@ -20,11 +20,12 @@
       (builtins.substring 4 2 longDate)
       (builtins.substring 6 2 longDate)
     ]);
+    version = lib.removeSuffix "\n" (builtins.readFile ./VERSION);
   in {
     overlays.default = _: prev: rec {
       hyprpicker = prev.callPackage ./nix/default.nix {
         stdenv = prev.gcc12Stdenv;
-        version = "0.pre" + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
+        version = version + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
         wayland-protocols = prev.wayland-protocols.overrideAttrs (self: super: {
           version = "1.34";
           src = prev.fetchurl {
