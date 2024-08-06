@@ -94,6 +94,11 @@ void Events::handleCapabilities(void* data, wl_seat* wl_seat, uint32_t capabilit
 }
 
 void Events::handlePointerEnter(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+    auto x = wl_fixed_to_double(surface_x);
+    auto y = wl_fixed_to_double(surface_y);
+
+    g_pHyprpicker->m_vLastCoords = {x, y};
+
     g_pHyprpicker->markDirty();
 
     for (auto& ls : g_pHyprpicker->m_vLayerSurfaces) {
