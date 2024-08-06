@@ -121,8 +121,6 @@ SPoolBuffer* CHyprpicker::getBufferForLS(CLayerSurface* pLS) {
     if (!returns)
         return nullptr;
 
-    returns->busy = true;
-
     return returns;
 }
 
@@ -327,8 +325,10 @@ void* CHyprpicker::convert24To32Buffer(SPoolBuffer* pBuffer) {
 void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     const auto PBUFFER = getBufferForLS(pSurface);
 
-    if (!PBUFFER || !pSurface->screenBuffer.buffer)
+    if (!PBUFFER || !pSurface->screenBuffer.buffer) {
+        Debug::log(ERR, PBUFFER ? "renderSurface: pSurface->screenBuffer.buffer null" : "renderSurface: PBUFFER null");
         return;
+    }
 
     PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale,
                                                            pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale, PBUFFER->pixelSize.x * 4);
@@ -438,6 +438,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     cairo_destroy(PCAIRO);
     cairo_surface_destroy(PBUFFER->surface);
 
+    PBUFFER->busy    = true;
     PBUFFER->cairo   = nullptr;
     PBUFFER->surface = nullptr;
 
