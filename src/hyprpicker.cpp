@@ -28,6 +28,12 @@ void CHyprpicker::init() {
 
     wl_display_roundtrip(m_pWLDisplay);
 
+    if (!m_pSCMgr) {
+        Debug::log(CRIT, "Compositor doesn't support wlr_screencopy_unstable_v1!");
+        exit(1);
+        return;
+    }
+
     for (auto& m : m_vMonitors) {
         m_vLayerSurfaces.emplace_back(std::make_unique<CLayerSurface>(m.get()));
 
