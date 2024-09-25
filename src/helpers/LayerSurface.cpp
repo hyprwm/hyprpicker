@@ -1,12 +1,11 @@
 #include "LayerSurface.hpp"
 
-#include "../events/Events.hpp"
 #include "../hyprpicker.hpp"
 
 CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     m_pMonitor = pMonitor;
 
-    pSurface = wl_compositor_create_surface(g_pHyprpicker->m_pCompositor);
+    pSurface = makeShared<CCWlSurface>(g_pHyprpicker->m_pCompositor->sendCreateSurface());
 
     if (!pSurface) {
         Debug::log(CRIT, "The compositor did not allow hyprpicker a surface!");
@@ -14,7 +13,8 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
         return;
     }
 
-    pLayerSurface = zwlr_layer_shell_v1_get_layer_surface(g_pHyprpicker->m_pLayerShell, pSurface, pMonitor->output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "hyprpicker");
+    pLayerSurface = makeShared<CCZwlrLayerSurfaceV1>(
+        g_pHyprpicker->m_pLayerShell->sendGetLayerSurface(pSurface->resource(), pMonitor->output->resource(), ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "hyprpicker"));
 
     if (!pLayerSurface) {
         Debug::log(CRIT, "The compositor did not allow hyprpicker a layersurface!");
@@ -22,25 +22,63 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
         return;
     }
 
-    zwlr_layer_surface_v1_set_size(pLayerSurface, 0, 0);
-    zwlr_layer_surface_v1_set_anchor(
-        pLayerSurface, ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
-    zwlr_layer_surface_v1_set_exclusive_zone(pLayerSurface, -1);
-    zwlr_layer_surface_v1_set_keyboard_interactivity(pLayerSurface, true);
-    zwlr_layer_surface_v1_add_listener(pLayerSurface, &Events::layersurfaceListener, this);
-    wl_surface_commit(pSurface);
+    pLayerSurface->setConfigure([this](CCZwlrLayerSurfaceV1* r, uint32_t serial, uint32_t width, uint32_t height) {
+        m_pMonitor->size = {(double)width, (double)height};
+        ACKSerial        = serial;
+        wantsACK         = true;
+        working          = true;
+
+        g_pHyprpicker->recheckACK();
+    });
+
+    pLayerSurface->sendSetSize(0, 0);
+    pLayerSurface->sendSetAnchor((zwlrLayerSurfaceV1Anchor)(ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
+                                                            ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT));
+    pLayerSurface->sendSetExclusiveZone(-1);
+    pLayerSurface->sendSetKeyboardInteractivity(1);
+    pSurface->sendCommit();
 
     wl_display_flush(g_pHyprpicker->m_pWLDisplay);
 }
 
 CLayerSurface::~CLayerSurface() {
-    wl_surface_destroy(pSurface);
-    zwlr_layer_surface_v1_destroy(pLayerSurface);
+    pLayerSurface.reset();
+    pSurface.reset();
+    frameCallback.reset();
 
     if (g_pHyprpicker->m_pWLDisplay)
         wl_display_flush(g_pHyprpicker->m_pWLDisplay);
+}
 
-    g_pHyprpicker->destroyBuffer(&buffers[0]);
-    g_pHyprpicker->destroyBuffer(&buffers[1]);
-    g_pHyprpicker->destroyBuffer(&screenBuffer);
+// this has to be a separate function because frameCallback.reset() will destroy the listener func
+static void onCallbackDone(CLayerSurface* surf, uint32_t when) {
+    surf->frameCallback.reset();
+
+    if (surf->dirty || !surf->rendered)
+        g_pHyprpicker->renderSurface(g_pHyprpicker->m_pLastSurface);
+}
+
+void CLayerSurface::sendFrame() {
+    frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());
+    frameCallback->setDone([this](CCWlCallback* r, uint32_t when) { onCallbackDone(this, when); });
+
+    pSurface->sendAttach(lastBuffer == 0 ? buffers[0]->buffer.get() : buffers[1]->buffer.get(), 0, 0);
+    pSurface->sendSetBufferScale(m_pMonitor->scale);
+    pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
+    pSurface->sendCommit();
+
+    dirty = false;
+}
+
+void CLayerSurface::markDirty() {
+    frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());
+    frameCallback->setDone([this](CCWlCallback* r, uint32_t when) {
+        frameCallback.reset();
+
+        if (dirty || !rendered)
+            g_pHyprpicker->renderSurface(g_pHyprpicker->m_pLastSurface);
+    });
+    pSurface->sendCommit();
+
+    dirty = true;
 }

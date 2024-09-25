@@ -10,28 +10,28 @@ class CLayerSurface {
     CLayerSurface(SMonitor*);
     ~CLayerSurface();
 
-    SMonitor*              m_pMonitor = nullptr;
+    void                     sendFrame();
+    void                     markDirty();
 
-    zwlr_layer_surface_v1* pLayerSurface  = nullptr;
-    wl_surface*            pSurface       = nullptr;
-    wl_surface*            pCursorSurface = nullptr;
+    SMonitor*                m_pMonitor = nullptr;
 
-    bool                   wantsACK  = false;
-    uint32_t               ACKSerial = 0;
-    bool                   working   = false;
+    SP<CCZwlrLayerSurfaceV1> pLayerSurface = nullptr;
+    SP<CCWlSurface>          pSurface      = nullptr;
 
-    int                    lastBuffer = 0;
-    SPoolBuffer            buffers[2];
+    bool                     wantsACK  = false;
+    uint32_t                 ACKSerial = 0;
+    bool                     working   = false;
 
-    SPoolBuffer            screenBuffer;
-    uint32_t               scflags            = 0;
-    uint32_t               screenBufferFormat = 0;
+    int                      lastBuffer = 0;
+    SP<SPoolBuffer>          buffers[2];
 
-    bool                   dirty = true;
+    SP<SPoolBuffer>          screenBuffer;
+    uint32_t                 scflags            = 0;
+    uint32_t                 screenBufferFormat = 0;
 
-    bool                   rendered = false;
+    bool                     dirty = true;
 
-    wl_callback*           frame_callback = nullptr;
+    bool                     rendered = false;
 
-    wl_cursor_image*       pCursorImg = nullptr;
+    SP<CCWlCallback>         frameCallback = nullptr;
 };

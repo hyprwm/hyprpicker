@@ -1,6 +1,5 @@
 #include "hyprpicker.hpp"
 #include <signal.h>
-#include "events/Events.hpp"
 
 void sigHandler(int sig) {
     g_pHyprpicker->m_vLayerSurfaces.clear();
@@ -22,22 +21,76 @@ void CHyprpicker::init() {
 
     signal(SIGTERM, sigHandler);
 
-    m_pWLRegistry = wl_display_get_registry(m_pWLDisplay);
+    m_pRegistry = makeShared<CCWlRegistry>((wl_proxy*)wl_display_get_registry(m_pWLDisplay));
+    m_pRegistry->setGlobal([this](CCWlRegistry* r, uint32_t name, const char* interface, uint32_t version) {
+        if (strcmp(interface, wl_compositor_interface.name) == 0) {
+            m_pCompositor = makeShared<CCWlCompositor>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_compositor_interface, 4));
+        } else if (strcmp(interface, wl_shm_interface.name) == 0) {
+            m_pSHM = makeShared<CCWlShm>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_shm_interface, 1));
+        } else if (strcmp(interface, wl_output_interface.name) == 0) {
+            m_mtTickMutex.lock();
 
-    wl_registry_add_listener(m_pWLRegistry, &Events::registryListener, nullptr);
+            const auto PMONITOR = g_pHyprpicker->m_vMonitors
+                                      .emplace_back(std::make_unique<SMonitor>(
+                                          makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_output_interface, 4))))
+                                      .get();
+            PMONITOR->wayland_name = name;
+
+            m_mtTickMutex.unlock();
+        } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
+            m_pLayerShell = makeShared<CCZwlrLayerShellV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &zwlr_layer_shell_v1_interface, 1));
+        } else if (strcmp(interface, wl_seat_interface.name) == 0) {
+            m_pSeat = makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_seat_interface, 1));
+
+            m_pSeat->setCapabilities([this](CCWlSeat* seat, uint32_t caps) {
+                if (caps & WL_SEAT_CAPABILITY_POINTER) {
+                    if (!m_pPointer) {
+                        m_pPointer = makeShared<CCWlPointer>(m_pSeat->sendGetPointer());
+                        initMouse();
+                        if (m_pCursorShapeMgr)
+                            m_pCursorShapeDevice = makeShared<CCWpCursorShapeDeviceV1>(m_pCursorShapeMgr->sendGetPointer(m_pPointer->resource()));
+                    }
+                } else {
+                    Debug::log(CRIT, "Hyprpicker cannot work without a pointer!");
+                    g_pHyprpicker->finish(1);
+                }
+
+                if (caps & WL_SEAT_CAPABILITY_KEYBOARD) {
+                    if (!m_pKeyboard) {
+                        m_pKeyboard = makeShared<CCWlKeyboard>(m_pSeat->sendGetKeyboard());
+                        initKeyboard();
+                    }
+                } else
+                    m_pKeyboard.reset();
+            });
+
+        } else if (strcmp(interface, zwlr_screencopy_manager_v1_interface.name) == 0) {
+            m_pScreencopyMgr =
+                makeShared<CCZwlrScreencopyManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &zwlr_screencopy_manager_v1_interface, 1));
+        } else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
+            m_pCursorShapeMgr =
+                makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wp_cursor_shape_manager_v1_interface, 1));
+        }
+    });
 
     wl_display_roundtrip(m_pWLDisplay);
+
+    if (!m_pCursorShapeMgr)
+        Debug::log(ERR, "cursor_shape_v1 not supported, cursor won't be affected");
+
+    if (!m_pScreencopyMgr) {
+        Debug::log(CRIT, "zwlr_screencopy_v1 not supported, can't proceed");
+        exit(1);
+    }
 
     for (auto& m : m_vMonitors) {
         m_vLayerSurfaces.emplace_back(std::make_unique<CLayerSurface>(m.get()));
 
         m_pLastSurface = m_vLayerSurfaces.back().get();
 
-        m->pSCFrame = zwlr_screencopy_manager_v1_capture_output(m_pSCMgr, false, m->output);
-
-        zwlr_screencopy_frame_v1_add_listener(m->pSCFrame, &Events::screencopyListener, m_pLastSurface);
-
-        m_pLastSurface->pCursorSurface = wl_compositor_create_surface(m_pCompositor);
+        m->pSCFrame = makeShared<CCZwlrScreencopyFrameV1>(m_pScreencopyMgr->sendCaptureOutput(false, m->output->resource()));
+        m->pLS      = m_vLayerSurfaces.back().get();
+        m->initSCFrame();
     }
 
     wl_display_roundtrip(m_pWLDisplay);
@@ -56,6 +109,19 @@ void CHyprpicker::finish(int code) {
     m_vLayerSurfaces.clear();
 
     if (m_pWLDisplay) {
+        m_vLayerSurfaces.clear();
+        m_vMonitors.clear();
+        m_pCompositor.reset();
+        m_pRegistry.reset();
+        m_pSHM.reset();
+        m_pLayerShell.reset();
+        m_pScreencopyMgr.reset();
+        m_pCursorShapeMgr.reset();
+        m_pCursorShapeDevice.reset();
+        m_pSeat.reset();
+        m_pKeyboard.reset();
+        m_pPointer.reset();
+
         wl_display_disconnect(m_pWLDisplay);
         m_pWLDisplay = nullptr;
     }
@@ -65,29 +131,13 @@ void CHyprpicker::finish(int code) {
 
 void CHyprpicker::recheckACK() {
     for (auto& ls : m_vLayerSurfaces) {
-        if (ls->wantsACK && ls->screenBuffer.buffer) {
+        if (ls->wantsACK) {
             ls->wantsACK = false;
-            zwlr_layer_surface_v1_ack_configure(ls->pLayerSurface, ls->ACKSerial);
+            ls->pLayerSurface->sendAckConfigure(ls->ACKSerial);
 
-            if (!ls->buffers[0].buffer) {
-                createBuffer(&ls->buffers[0], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888,
-                             ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
-                createBuffer(&ls->buffers[1], ls->m_pMonitor->size.x * ls->m_pMonitor->scale, ls->m_pMonitor->size.y * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888,
-                             ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
-
-                int XCURSOR_SIZE = 24;
-                if (getenv("XCURSOR_SIZE")) {
-                    XCURSOR_SIZE = std::stoi(getenv("XCURSOR_SIZE"));
-                }
-
-                const auto THEME  = wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * ls->m_pMonitor->scale, m_pWLSHM);
-                auto       cursor = wl_cursor_theme_get_cursor(THEME, "crosshair");
-
-                if (!cursor)
-                    cursor = wl_cursor_theme_get_cursor(THEME, "left_ptr");
-
-                if (cursor)
-                    ls->pCursorImg = cursor->images[0];
+            if (!ls->buffers[0] || ls->buffers[0]->pixelSize != ls->m_pMonitor->size * ls->m_pMonitor->scale) {
+                ls->buffers[0] = makeShared<SPoolBuffer>(ls->m_pMonitor->size * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
+                ls->buffers[1] = makeShared<SPoolBuffer>(ls->m_pMonitor->size * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
             }
         }
     }
@@ -97,29 +147,22 @@ void CHyprpicker::recheckACK() {
 
 void CHyprpicker::markDirty() {
     for (auto& ls : m_vLayerSurfaces) {
-        if (ls->frame_callback)
+        if (ls->frameCallback)
             continue;
 
-        ls->frame_callback = wl_surface_frame(ls->pSurface);
-        wl_callback_add_listener(ls->frame_callback, &Events::frameListener, ls.get());
-        wl_surface_commit(ls->pSurface);
-
-        ls->dirty = true;
+        ls->markDirty();
     }
 }
 
-SPoolBuffer* CHyprpicker::getBufferForLS(CLayerSurface* pLS) {
-    SPoolBuffer* returns = nullptr;
+SP<SPoolBuffer> CHyprpicker::getBufferForLS(CLayerSurface* pLS) {
+    SP<SPoolBuffer> returns = nullptr;
 
     for (auto i = 0; i < 2; ++i) {
-        if (pLS->buffers[i].busy)
+        if (!pLS->buffers[i] || pLS->buffers[i]->busy)
             continue;
 
-        returns = &pLS->buffers[i];
+        returns = pLS->buffers[i];
     }
-
-    if (!returns)
-        return nullptr;
 
     return returns;
 }
@@ -167,57 +210,7 @@ int CHyprpicker::createPoolFile(size_t size, std::string& name) {
     return FD;
 }
 
-void CHyprpicker::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32_t format, uint32_t stride) {
-    const size_t SIZE = stride * h;
-
-    std::string  name;
-    const auto   FD = createPoolFile(SIZE, name);
-
-    if (FD == -1) {
-        Debug::log(CRIT, "Unable to create pool file!");
-        g_pHyprpicker->finish(1);
-    }
-
-    const auto DATA = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
-    const auto POOL = wl_shm_create_pool(g_pHyprpicker->m_pWLSHM, FD, SIZE);
-    pBuffer->buffer = wl_shm_pool_create_buffer(POOL, 0, w, h, stride, format);
-
-    wl_buffer_add_listener(pBuffer->buffer, &Events::bufferListener, pBuffer);
-
-    wl_shm_pool_destroy(POOL);
-
-    close(FD);
-
-    pBuffer->format    = format;
-    pBuffer->size      = SIZE;
-    pBuffer->data      = DATA;
-    pBuffer->pixelSize = Vector2D(w, h);
-    pBuffer->name      = name;
-    pBuffer->stride    = stride;
-}
-
-void CHyprpicker::destroyBuffer(SPoolBuffer* pBuffer) {
-    wl_buffer_destroy(pBuffer->buffer);
-    cairo_destroy(pBuffer->cairo);
-    cairo_surface_destroy(pBuffer->surface);
-    munmap(pBuffer->data, pBuffer->size);
-
-    pBuffer->buffer  = nullptr;
-    pBuffer->cairo   = nullptr;
-    pBuffer->surface = nullptr;
-
-    unlink(pBuffer->name.c_str());
-
-    if (pBuffer->paddedData) {
-        free(pBuffer->paddedData);
-    }
-}
-
-void CHyprpicker::createSeat(wl_seat* pSeat) {
-    wl_seat_add_listener(pSeat, &Events::seatListener, pSeat);
-}
-
-void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
+void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
     switch (pBuffer->format) {
         case WL_SHM_FORMAT_ARGB8888:
         case WL_SHM_FORMAT_XRGB8888: break;
@@ -268,7 +261,7 @@ void CHyprpicker::convertBuffer(SPoolBuffer* pBuffer) {
 }
 
 // Mallocs a new buffer, which needs to be free'd!
-void* CHyprpicker::convert24To32Buffer(SPoolBuffer* pBuffer) {
+void* CHyprpicker::convert24To32Buffer(SP<SPoolBuffer> pBuffer) {
     uint8_t* newBuffer       = (uint8_t*)malloc((size_t)pBuffer->pixelSize.x * pBuffer->pixelSize.y * 4);
     int      newBufferStride = pBuffer->pixelSize.x * 4;
     uint8_t* oldBuffer       = (uint8_t*)pBuffer->data;
@@ -325,8 +318,8 @@ void* CHyprpicker::convert24To32Buffer(SPoolBuffer* pBuffer) {
 void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     const auto PBUFFER = getBufferForLS(pSurface);
 
-    if (!PBUFFER || !pSurface->screenBuffer.buffer) {
-        Debug::log(ERR, PBUFFER ? "renderSurface: pSurface->screenBuffer.buffer null" : "renderSurface: PBUFFER null");
+    if (!PBUFFER || !pSurface->screenBuffer) {
+        // Debug::log(ERR, PBUFFER ? "renderSurface: pSurface->screenBuffer null" : "renderSurface: PBUFFER null");
         return;
     }
 
@@ -345,13 +338,13 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     cairo_fill(PCAIRO);
 
     if (pSurface == g_pHyprpicker->m_pLastSurface && !forceInactive) {
-        const auto SCALEBUFS   = Vector2D{pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y};
+        const auto SCALEBUFS   = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
         const auto SCALECURSOR = Vector2D{
-            g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
-            g_pHyprpicker->m_pLastSurface->screenBuffer.pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0].pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
+            g_pHyprpicker->m_pLastSurface->screenBuffer->pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0]->pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
+            g_pHyprpicker->m_pLastSurface->screenBuffer->pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0]->pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
         const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y};
 
-        const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+        const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
         cairo_matrix_t matrixPre;
         cairo_matrix_init_identity(&matrixPre);
@@ -394,7 +387,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_restore(PCAIRO);
             cairo_save(PCAIRO);
 
-            const auto PATTERN = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+            const auto PATTERN = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
             cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
             cairo_matrix_t matrix;
             cairo_matrix_init_identity(&matrix);
@@ -419,8 +412,8 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
         cairo_fill(PCAIRO);
     } else {
-        const auto SCALEBUFS  = Vector2D{pSurface->screenBuffer.pixelSize.x / PBUFFER->pixelSize.x, pSurface->screenBuffer.pixelSize.y / PBUFFER->pixelSize.y};
-        const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer.surface);
+        const auto SCALEBUFS  = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
+        const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
         cairo_matrix_t matrixPre;
         cairo_matrix_init_identity(&matrixPre);
@@ -434,7 +427,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         cairo_pattern_destroy(PATTERNPRE);
     }
 
-    sendFrame(pSurface);
+    pSurface->sendFrame();
     cairo_destroy(PCAIRO);
     cairo_surface_destroy(PBUFFER->surface);
 
@@ -445,26 +438,222 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     pSurface->rendered = true;
 }
 
-void CHyprpicker::sendFrame(CLayerSurface* pSurface) {
-    pSurface->frame_callback = wl_surface_frame(pSurface->pSurface);
-    wl_callback_add_listener(pSurface->frame_callback, &Events::frameListener, pSurface);
-
-    wl_surface_attach(pSurface->pSurface, pSurface->lastBuffer == 0 ? pSurface->buffers[0].buffer : pSurface->buffers[1].buffer, 0, 0);
-    wl_surface_set_buffer_scale(pSurface->pSurface, pSurface->m_pMonitor->scale);
-    wl_surface_damage_buffer(pSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
-    wl_surface_commit(pSurface->pSurface);
-
-    pSurface->dirty = false;
-}
-
 CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
-    void* dataSrc = pLS->screenBuffer.paddedData ? pLS->screenBuffer.paddedData : pLS->screenBuffer.data;
+    void* dataSrc = pLS->screenBuffer->paddedData ? pLS->screenBuffer->paddedData : pLS->screenBuffer->data;
     struct pixel {
         unsigned char blue;
         unsigned char green;
         unsigned char red;
         unsigned char alpha;
-    }* px = (struct pixel*)((char*)dataSrc + (int)pix.y * (int)pLS->screenBuffer.pixelSize.x * 4 + (int)pix.x * 4);
+    }* px = (struct pixel*)((char*)dataSrc + (int)pix.y * (int)pLS->screenBuffer->pixelSize.x * 4 + (int)pix.x * 4);
 
     return CColor{(uint8_t)px->red, (uint8_t)px->green, (uint8_t)px->blue, (uint8_t)px->alpha};
+}
+
+void CHyprpicker::initKeyboard() {
+    m_pKeyboard->setKeymap([this](CCWlKeyboard* r, wl_keyboard_keymap_format format, int32_t fd, uint32_t size) {
+        if (!m_pXKBContext)
+            return;
+
+        if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
+            Debug::log(ERR, "Could not recognise keymap format");
+            return;
+        }
+
+        const char* buf = (const char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+        if (buf == MAP_FAILED) {
+            Debug::log(ERR, "Failed to mmap xkb keymap: %d", errno);
+            return;
+        }
+
+        m_pXKBKeymap = xkb_keymap_new_from_buffer(m_pXKBContext, buf, size - 1, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+        munmap((void*)buf, size);
+        close(fd);
+
+        if (!m_pXKBKeymap) {
+            Debug::log(ERR, "Failed to compile xkb keymap");
+            return;
+        }
+
+        m_pXKBState = xkb_state_new(m_pXKBKeymap);
+        if (!m_pXKBState) {
+            Debug::log(ERR, "Failed to create xkb state");
+            return;
+        }
+    });
+
+    m_pKeyboard->setKey([this](CCWlKeyboard* r, uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
+        if (state != WL_KEYBOARD_KEY_STATE_PRESSED)
+            return;
+
+        if (m_pXKBState) {
+            if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Escape)
+                finish();
+        } else if (key == 1) // Assume keycode 1 is escape
+            finish();
+    });
+}
+
+void CHyprpicker::initMouse() {
+    m_pPointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_resource* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+        auto x = wl_fixed_to_double(surface_x);
+        auto y = wl_fixed_to_double(surface_y);
+
+        m_vLastCoords = {x, y};
+
+        markDirty();
+
+        for (auto& ls : m_vLayerSurfaces) {
+            if (ls->pSurface->resource() == surface) {
+                m_pLastSurface = ls.get();
+                break;
+            }
+        }
+
+        m_pCursorShapeDevice->sendSetShape(serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
+    });
+    m_pPointer->setLeave([this](CCWlPointer* r, uint32_t timeMs, wl_resource* surf) {
+        for (auto& ls : m_vLayerSurfaces) {
+            if (ls->pSurface->resource() == surf) {
+                renderSurface(ls.get(), true);
+            }
+        }
+    });
+    m_pPointer->setMotion([this](CCWlPointer* r, uint32_t timeMs, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+        auto x = wl_fixed_to_double(surface_x);
+        auto y = wl_fixed_to_double(surface_y);
+
+        m_vLastCoords = {x, y};
+
+        markDirty();
+    });
+    m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
+        auto fmax3 = [](float a, float b, float c) -> float { return (a > b && a > c) ? a : (b > c) ? b : c; };
+        auto fmin3 = [](float a, float b, float c) -> float { return (a < b && a < c) ? a : (b < c) ? b : c; };
+
+        // relative brightness of a color
+        // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
+        const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
+
+        // get the px and print it
+        const auto SCALE = Vector2D{m_pLastSurface->screenBuffer->pixelSize.x / (m_pLastSurface->buffers[0]->pixelSize.x / m_pLastSurface->m_pMonitor->scale),
+                                    m_pLastSurface->screenBuffer->pixelSize.y / (m_pLastSurface->buffers[0]->pixelSize.y / m_pLastSurface->m_pMonitor->scale)};
+
+        const auto CLICKPOS = m_vLastCoords.floor() * SCALE;
+
+        const auto COL = getColorFromPixel(m_pLastSurface, CLICKPOS);
+
+        // threshold: (lumi_white + 0.05) / (x + 0.05) == (x + 0.05) / (lumi_black + 0.05)
+        // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
+        const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
+
+        switch (m_bSelectedOutputMode) {
+            case OUTPUT_CMYK: {
+                // http://www.codeproject.com/KB/applications/xcmyk.aspx
+
+                float r = 1 - COL.r / 255.0f, g = 1 - COL.g / 255.0f, b = 1 - COL.b / 255.0f;
+                float k = fmin3(r, g, b), K = (k == 1) ? 1 : 1 - k;
+                float c = (r - k) / K, m = (g - k) / K, y = (b - k) / K;
+
+                c = std::round(c * 100);
+                m = std::round(m * 100);
+                y = std::round(y * 100);
+                k = std::round(k * 100);
+
+                if (m_bFancyOutput)
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
+                else
+                    Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
+
+                if (m_bAutoCopy)
+                    Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
+                finish();
+                break;
+            }
+            case OUTPUT_HEX: {
+                auto toHex = [](int i) -> std::string {
+                    const char* DS = "0123456789ABCDEF";
+
+                    std::string result = "";
+
+                    result += DS[i / 16];
+                    result += DS[i % 16];
+
+                    return result;
+                };
+
+                if (m_bFancyOutput)
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im#%s%s%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(),
+                               toHex(COL.b).c_str());
+                else
+                    Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+
+                if (m_bAutoCopy)
+                    Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+                finish();
+                break;
+            }
+            case OUTPUT_RGB: {
+                if (m_bFancyOutput)
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%i %i %i\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                else
+                    Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
+
+                if (m_bAutoCopy)
+                    Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
+                finish();
+                break;
+            }
+            case OUTPUT_HSL:
+            case OUTPUT_HSV: {
+                // https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
+
+                auto floatEq = [](float a, float b) -> bool {
+                    return std::nextafter(a, std::numeric_limits<double>::lowest()) <= b && std::nextafter(a, std::numeric_limits<double>::max()) >= b;
+                };
+
+                float h, s, l, v;
+                float r = COL.r / 255.0f, g = COL.g / 255.0f, b = COL.b / 255.0f;
+                float max = fmax3(r, g, b), min = fmin3(r, g, b);
+                float c = max - min;
+
+                v = max;
+                if (c == 0)
+                    h = 0;
+                else if (v == r)
+                    h = 60 * (0 + (g - b) / c);
+                else if (v == g)
+                    h = 60 * (2 + (b - r) / c);
+                else /* v == b */
+                    h = 60 * (4 + (r - g) / c);
+
+                float l_or_v;
+                if (m_bSelectedOutputMode == OUTPUT_HSL) {
+                    l      = (max + min) / 2;
+                    s      = (floatEq(l, 0.0f) || floatEq(l, 1.0f)) ? 0 : (v - l) / std::min(l, 1 - l);
+                    l_or_v = std::round(l * 100);
+                } else {
+                    v      = max;
+                    s      = floatEq(v, 0.0f) ? 0 : c / v;
+                    l_or_v = std::round(v * 100);
+                }
+
+                h = std::round(h);
+                s = std::round(s * 100);
+
+                if (m_bFancyOutput)
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l_or_v);
+                else
+                    Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
+
+                if (m_bAutoCopy)
+                    Clipboard::copy("%g %g%% %g%%", h, s, l_or_v);
+                finish();
+                break;
+            }
+        }
+
+        finish();
+    });
 }

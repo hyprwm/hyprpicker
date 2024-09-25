@@ -18,14 +18,17 @@ class CHyprpicker {
 
     std::mutex                                  m_mtTickMutex;
 
-    wl_compositor*                              m_pCompositor        = nullptr;
-    wl_display*                                 m_pWLDisplay         = nullptr;
-    wl_registry*                                m_pWLRegistry        = nullptr;
-    wl_shm*                                     m_pWLSHM             = nullptr;
-    zwlr_layer_shell_v1*                        m_pLayerShell        = nullptr;
-    zwlr_screencopy_manager_v1*                 m_pSCMgr             = nullptr;
-    wp_cursor_shape_manager_v1*                 m_pCursorShape       = nullptr;
-    wp_cursor_shape_device_v1*                  m_pCursorShapeDevice = nullptr;
+    SP<CCWlCompositor>                          m_pCompositor;
+    SP<CCWlRegistry>                            m_pRegistry;
+    SP<CCWlShm>                                 m_pSHM;
+    SP<CCZwlrLayerShellV1>                      m_pLayerShell;
+    SP<CCZwlrScreencopyManagerV1>               m_pScreencopyMgr;
+    SP<CCWpCursorShapeManagerV1>                m_pCursorShapeMgr;
+    SP<CCWpCursorShapeDeviceV1>                 m_pCursorShapeDevice;
+    SP<CCWlSeat>                                m_pSeat;
+    SP<CCWlKeyboard>                            m_pKeyboard;
+    SP<CCWlPointer>                             m_pPointer;
+    wl_display*                                 m_pWLDisplay = nullptr;
 
     xkb_context*                                m_pXKBContext = nullptr;
     xkb_keymap*                                 m_pXKBKeymap  = nullptr;
@@ -44,26 +47,22 @@ class CHyprpicker {
     std::vector<std::unique_ptr<SMonitor>>      m_vMonitors;
     std::vector<std::unique_ptr<CLayerSurface>> m_vLayerSurfaces;
 
-    void                                        createSeat(wl_seat*);
-
     CLayerSurface*                              m_pLastSurface;
 
     Vector2D                                    m_vLastCoords;
 
     void                                        renderSurface(CLayerSurface*, bool forceInactive = false);
 
-    void                                        createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t, uint32_t);
-    void                                        destroyBuffer(SPoolBuffer*);
     int                                         createPoolFile(size_t, std::string&);
     bool                                        setCloexec(const int&);
     void                                        recheckACK();
+    void                                        initKeyboard();
+    void                                        initMouse();
 
-    void                                        sendFrame(CLayerSurface*);
+    SP<SPoolBuffer>                             getBufferForLS(CLayerSurface*);
 
-    SPoolBuffer*                                getBufferForLS(CLayerSurface*);
-
-    void                                        convertBuffer(SPoolBuffer*);
-    void*                                       convert24To32Buffer(SPoolBuffer*);
+    void                                        convertBuffer(SP<SPoolBuffer>);
+    void*                                       convert24To32Buffer(SP<SPoolBuffer>);
 
     void                                        markDirty();
 

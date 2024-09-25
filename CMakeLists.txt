@@ -38,40 +38,6 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 #
 
-find_program(WaylandScanner NAMES wayland-scanner)
-message(STATUS "Found WaylandScanner at ${WaylandScanner}")
-execute_process(
-  COMMAND pkg-config --variable=pkgdatadir wayland-protocols
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE WAYLAND_PROTOCOLS_DIR
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
-
-function(protocol protoPath protoName external)
-  if(external)
-    execute_process(
-      COMMAND ${WaylandScanner} client-header ${protoPath}
-              ${protoName}-protocol.h WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(
-      COMMAND ${WaylandScanner} private-code ${protoPath}
-              ${protoName}-protocol.c WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    # target_sources(hyprpicker PRIVATE ${protoName}-protocol.h)
-    target_sources(hyprpicker PRIVATE ${protoName}-protocol.h
-                                      ${protoName}-protocol.c)
-  else()
-    execute_process(
-      COMMAND ${WaylandScanner} client-header
-              ${WAYLAND_PROTOCOLS_DIR}/${protoPath} ${protoName}-protocol.h
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(
-      COMMAND ${WaylandScanner} private-code
-              ${WAYLAND_PROTOCOLS_DIR}/${protoPath} ${protoName}-protocol.c
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    target_sources(hyprpicker PRIVATE ${protoName}-protocol.h
-                                      ${protoName}-protocol.c)
-  endif()
-endfunction()
-
 include_directories(.)
 set(CMAKE_CXX_STANDARD 23)
 add_compile_options(-DWLR_USE_UNSTABLE)
@@ -97,19 +63,53 @@ pkg_check_modules(
   pango
   pangocairo
   libjpeg
-  hyprutils>=0.2.0)
+  hyprutils>=0.2.0
+  hyprwayland-scanner>=0.4.0)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
 add_executable(hyprpicker ${SRCFILES})
 
-protocol("protocols/wlr-layer-shell-unstable-v1.xml"
-         "wlr-layer-shell-unstable-v1" true)
-protocol("protocols/wlr-screencopy-unstable-v1.xml"
-         "wlr-screencopy-unstable-v1" true)
-protocol("stable/xdg-shell/xdg-shell.xml" "xdg-shell" false)
-protocol("staging/cursor-shape/cursor-shape-v1.xml" "wp-cursor-shape-v1" false)
-protocol("unstable/tablet/tablet-unstable-v2.xml" "tablet-unstable-v2" false)
+pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+pkg_get_variable(WAYLAND_CLIENT_DIR wayland-client pkgdatadir)
+message(STATUS "Found wayland-client at ${WAYLAND_CLIENT_DIR}")
+
+function(protocolnew protoPath protoName external)
+  if(external)
+    set(path ${CMAKE_SOURCE_DIR}/${protoPath})
+  else()
+    set(path ${WAYLAND_PROTOCOLS_DIR}/${protoPath})
+  endif()
+  add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/${protoName}.cpp
+           ${CMAKE_SOURCE_DIR}/protocols/${protoName}.hpp
+    COMMAND hyprwayland-scanner --client ${path}/${protoName}.xml
+            ${CMAKE_SOURCE_DIR}/protocols/
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  target_sources(hyprpicker PRIVATE protocols/${protoName}.cpp
+                                   protocols/${protoName}.hpp)
+endfunction()
+function(protocolWayland)
+  add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/wayland.cpp
+           ${CMAKE_SOURCE_DIR}/protocols/wayland.hpp
+    COMMAND hyprwayland-scanner --wayland-enums --client
+            ${WAYLAND_CLIENT_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  target_sources(hyprpicker PRIVATE protocols/wayland.cpp protocols/wayland.hpp)
+endfunction()
+
+protocolwayland()
+
+protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
+protocolnew("protocols" "wlr-screencopy-unstable-v1" true)
+protocolnew("stable/linux-dmabuf" "linux-dmabuf-v1" false)
+protocolnew("staging/fractional-scale" "fractional-scale-v1" false)
+protocolnew("stable/viewporter" "viewporter" false)
+protocolnew("stable/xdg-shell" "xdg-shell" false)
+protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
+protocolnew("stable/tablet" "tablet-v2" false)
 
 target_compile_definitions(hyprpicker
                            PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")

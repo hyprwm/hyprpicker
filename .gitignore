@@ -16,6 +16,12 @@ result
 *.o
 *-protocol.c
 *-protocol.h
+
+protocols/*.cpp
+protocols/*.hpp
+
+.cache/
+
 .ccls-cache
 
 gmon.out
