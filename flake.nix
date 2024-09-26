@@ -10,6 +10,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
     };
+
+    hyprwayland-scanner = {
+      url = "github:hyprwm/hyprwayland-scanner";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
   };
 
   outputs = {
@@ -36,6 +42,7 @@
       default = self.overlays.hyprpicker;
       hyprpicker = lib.composeManyExtensions [
         inputs.hyprutils.overlays.default
+        inputs.hyprwayland-scanner.overlays.default
         (final: prev: {
           hyprpicker = prev.callPackage ./nix/default.nix {
             stdenv = prev.gcc13Stdenv;

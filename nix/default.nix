@@ -6,6 +6,7 @@
   cairo,
   fribidi,
   hyprutils,
+  hyprwayland-scanner,
   libdatrie,
   libGL,
   libjpeg,
@@ -37,6 +38,7 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [
     cmake
+    hyprwayland-scanner
     pkg-config
   ];
 
