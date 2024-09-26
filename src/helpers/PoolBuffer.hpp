@@ -3,7 +3,10 @@
 #include "../defines.hpp"
 
 struct SPoolBuffer {
-    wl_buffer*       buffer  = nullptr;
+    SPoolBuffer(const Vector2D& size, uint32_t format, uint32_t stride);
+    ~SPoolBuffer();
+
+    SP<CCWlBuffer>   buffer  = nullptr;
     cairo_surface_t* surface = nullptr;
     cairo_t*         cairo   = nullptr;
     void*            data    = nullptr;

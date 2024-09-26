@@ -11,22 +11,12 @@
 #include <cmath>
 #include <math.h>
 
-#define class     _class
-#define namespace _namespace
-#define static
-
-extern "C" {
-#include "wlr-layer-shell-unstable-v1-protocol.h"
-#include "wlr-screencopy-unstable-v1-protocol.h"
-#include "xdg-shell-protocol.h"
-#include "wp-cursor-shape-v1-protocol.h"
-#include <wayland-client.h>
-#include <wayland-cursor.h>
-}
-
-#undef class
-#undef namespace
-#undef static
+#include "protocols/cursor-shape-v1.hpp"
+#include "protocols/fractional-scale-v1.hpp"
+#include "protocols/wlr-layer-shell-unstable-v1.hpp"
+#include "protocols/wlr-screencopy-unstable-v1.hpp"
+#include "protocols/viewporter.hpp"
+#include "protocols/wayland.hpp"
 
 #include <assert.h>
 #include <cairo.h>
@@ -45,3 +35,9 @@ extern "C" {
 #include <filesystem>
 #include <thread>
 #include <unordered_map>
+
+#include <hyprutils/memory/WeakPtr.hpp>
+using namespace Hyprutils::Memory;
+
+#define SP CSharedPointer
+#define WP CWeakPointer
