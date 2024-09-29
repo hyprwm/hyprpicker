@@ -14,7 +14,8 @@ static void help(void) {
               << " -z | --no-zoom           | Disable the zoom lens\n"
               << " -q | --quiet             | Disable most logs (leaves errors)\n"
               << " -v | --verbose           | Enable more logs\n"
-              << " -t | --no-fractional     | Disable fractional scaling support\n";
+              << " -t | --no-fractional     | Disable fractional scaling support\n"
+              << " -V | --version           | Print version info\n";
 }
 
 int main(int argc, char** argv, char** envp) {
@@ -31,9 +32,10 @@ int main(int argc, char** argv, char** envp) {
                                                {"no-fractional", no_argument, NULL, 't'},
                                                {"quiet", no_argument, NULL, 'q'},
                                                {"verbose", no_argument, NULL, 'v'},
+                                               {"version", no_argument, NULL, 'V'},
                                                {NULL, 0, NULL, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnarzqvt", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnarzqvtV", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -62,6 +64,10 @@ int main(int argc, char** argv, char** envp) {
             case 't': g_pHyprpicker->m_bNoFractional = true; break;
             case 'q': Debug::quiet = true; break;
             case 'v': Debug::verbose = true; break;
+            case 'V': {
+                std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
+                exit(0);
+            }
 
             default: help(); exit(1);
         }

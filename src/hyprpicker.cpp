@@ -387,7 +387,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         if (!m_bNoZoom) {
             cairo_save(PCAIRO);
 
-            const auto CLICKPOSBUF =  CLICKPOS / PBUFFER->pixelSize * pSurface->screenBuffer->pixelSize;
+            const auto CLICKPOSBUF = CLICKPOS / PBUFFER->pixelSize * pSurface->screenBuffer->pixelSize;
 
             const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOSBUF);
             cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);

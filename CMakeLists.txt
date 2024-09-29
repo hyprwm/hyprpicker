@@ -10,6 +10,8 @@ project(
 
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
 
+add_compile_definitions(HYPRPICKER_VERSION="${VERSION}")
+
 message(STATUS "Configuring hyprpicker!")
 
 # Get git info hash and branch
