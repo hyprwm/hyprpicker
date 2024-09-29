@@ -8,6 +8,12 @@
 void Debug::log(LogLevel level, const char* fmt, ...) {
     std::string levelstr = "";
 
+    if (quiet && (level != ERR && level != CRIT))
+        return;
+
+    if (!verbose && level == TRACE)
+        return;
+
     switch (level) {
         case LOG: levelstr = "[LOG] "; break;
         case WARN: levelstr = "[WARN] "; break;

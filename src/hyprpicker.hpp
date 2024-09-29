@@ -28,6 +28,8 @@ class CHyprpicker {
     SP<CCWlSeat>                                m_pSeat;
     SP<CCWlKeyboard>                            m_pKeyboard;
     SP<CCWlPointer>                             m_pPointer;
+    SP<CCWpFractionalScaleManagerV1>            m_pFractionalMgr;
+    SP<CCWpViewporter>                          m_pViewporter;
     wl_display*                                 m_pWLDisplay = nullptr;
 
     xkb_context*                                m_pXKBContext = nullptr;
@@ -41,6 +43,7 @@ class CHyprpicker {
     bool                                        m_bAutoCopy       = false;
     bool                                        m_bRenderInactive = false;
     bool                                        m_bNoZoom         = false;
+    bool                                        m_bNoFractional   = false;
 
     bool                                        m_bRunning = true;
 

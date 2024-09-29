@@ -70,6 +70,11 @@ void CHyprpicker::init() {
         } else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
             m_pCursorShapeMgr =
                 makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wp_cursor_shape_manager_v1_interface, 1));
+        } else if (strcmp(interface, wp_fractional_scale_manager_v1_interface.name) == 0) {
+            m_pFractionalMgr =
+                makeShared<CCWpFractionalScaleManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wp_fractional_scale_manager_v1_interface, 1));
+        } else if (strcmp(interface, wp_viewporter_interface.name) == 0) {
+            m_pViewporter = makeShared<CCWpViewporter>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wp_viewporter_interface, 1));
         }
     });
 
@@ -81,6 +86,15 @@ void CHyprpicker::init() {
     if (!m_pScreencopyMgr) {
         Debug::log(CRIT, "zwlr_screencopy_v1 not supported, can't proceed");
         exit(1);
+    }
+
+    if (!m_pFractionalMgr) {
+        Debug::log(WARN, "wp_fractional_scale_v1 not supported, fractional scaling won't work");
+        m_bNoFractional = true;
+    }
+    if (!m_pViewporter) {
+        Debug::log(WARN, "wp_viewporter not supported, fractional scaling won't work");
+        m_bNoFractional = true;
     }
 
     for (auto& m : m_vMonitors) {
@@ -121,6 +135,8 @@ void CHyprpicker::finish(int code) {
         m_pSeat.reset();
         m_pKeyboard.reset();
         m_pPointer.reset();
+        m_pViewporter.reset();
+        m_pFractionalMgr.reset();
 
         wl_display_disconnect(m_pWLDisplay);
         m_pWLDisplay = nullptr;
@@ -135,9 +151,11 @@ void CHyprpicker::recheckACK() {
             ls->wantsACK = false;
             ls->pLayerSurface->sendAckConfigure(ls->ACKSerial);
 
-            if (!ls->buffers[0] || ls->buffers[0]->pixelSize != ls->m_pMonitor->size * ls->m_pMonitor->scale) {
-                ls->buffers[0] = makeShared<SPoolBuffer>(ls->m_pMonitor->size * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
-                ls->buffers[1] = makeShared<SPoolBuffer>(ls->m_pMonitor->size * ls->m_pMonitor->scale, WL_SHM_FORMAT_ARGB8888, ls->m_pMonitor->size.x * ls->m_pMonitor->scale * 4);
+            const auto MONITORSIZE = ls->screenBuffer && !g_pHyprpicker->m_bNoFractional ? ls->screenBuffer->pixelSize : ls->m_pMonitor->size * ls->m_pMonitor->scale;
+
+            if (!ls->buffers[0] || ls->buffers[0]->pixelSize != MONITORSIZE) {
+                ls->buffers[0] = makeShared<SPoolBuffer>(MONITORSIZE, WL_SHM_FORMAT_ARGB8888, MONITORSIZE.x * 4);
+                ls->buffers[1] = makeShared<SPoolBuffer>(MONITORSIZE, WL_SHM_FORMAT_ARGB8888, MONITORSIZE.x * 4);
             }
         }
     }
@@ -323,8 +341,8 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         return;
     }
 
-    PBUFFER->surface = cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale,
-                                                           pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale, PBUFFER->pixelSize.x * 4);
+    PBUFFER->surface =
+        cairo_image_surface_create_for_data((unsigned char*)PBUFFER->data, CAIRO_FORMAT_ARGB32, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y, PBUFFER->pixelSize.x * 4);
 
     PBUFFER->cairo = cairo_create(PBUFFER->surface);
 
@@ -334,15 +352,13 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
     cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
 
-    cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
+    cairo_rectangle(PCAIRO, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
     cairo_fill(PCAIRO);
 
-    if (pSurface == g_pHyprpicker->m_pLastSurface && !forceInactive) {
-        const auto SCALEBUFS   = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
-        const auto SCALECURSOR = Vector2D{
-            g_pHyprpicker->m_pLastSurface->screenBuffer->pixelSize.x / (g_pHyprpicker->m_pLastSurface->buffers[0]->pixelSize.x / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale),
-            g_pHyprpicker->m_pLastSurface->screenBuffer->pixelSize.y / (g_pHyprpicker->m_pLastSurface->buffers[0]->pixelSize.y / g_pHyprpicker->m_pLastSurface->m_pMonitor->scale)};
-        const auto CLICKPOS = Vector2D{g_pHyprpicker->m_vLastCoords.floor().x * SCALECURSOR.x, g_pHyprpicker->m_vLastCoords.floor().y * SCALECURSOR.y};
+    if (pSurface == m_pLastSurface && !forceInactive) {
+        const auto SCALEBUFS      = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
+        const auto MOUSECOORDSABS = m_vLastCoords.floor() / pSurface->m_pMonitor->size;
+        const auto CLICKPOS       = MOUSECOORDSABS * PBUFFER->pixelSize;
 
         const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
@@ -368,15 +384,17 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         //
 
         cairo_restore(PCAIRO);
-        if (!g_pHyprpicker->m_bNoZoom) {
+        if (!m_bNoZoom) {
             cairo_save(PCAIRO);
 
-            const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOS);
+            const auto CLICKPOSBUF =  CLICKPOS / PBUFFER->pixelSize * pSurface->screenBuffer->pixelSize;
+
+            const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOSBUF);
             cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
 
             cairo_scale(PCAIRO, 1, 1);
 
-            cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 105 / SCALEBUFS.x, 0, 2 * M_PI);
+            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, 105 / SCALEBUFS.x, 0, 2 * M_PI);
             cairo_clip(PCAIRO);
 
             cairo_fill(PCAIRO);
@@ -391,12 +409,12 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_pattern_set_filter(PATTERN, CAIRO_FILTER_NEAREST);
             cairo_matrix_t matrix;
             cairo_matrix_init_identity(&matrix);
-            cairo_matrix_translate(&matrix, CLICKPOS.x + 0.5f, CLICKPOS.y + 0.5f);
+            cairo_matrix_translate(&matrix, CLICKPOSBUF.x + 0.5f, CLICKPOSBUF.y + 0.5f);
             cairo_matrix_scale(&matrix, 0.1f, 0.1f);
-            cairo_matrix_translate(&matrix, -CLICKPOS.x / SCALEBUFS.x - 0.5f, -CLICKPOS.y / SCALEBUFS.y - 0.5f);
+            cairo_matrix_translate(&matrix, -CLICKPOSBUF.x / SCALEBUFS.x - 0.5f, -CLICKPOSBUF.y / SCALEBUFS.y - 0.5f);
             cairo_pattern_set_matrix(PATTERN, &matrix);
             cairo_set_source(PCAIRO, PATTERN);
-            cairo_arc(PCAIRO, m_vLastCoords.x * pSurface->m_pMonitor->scale, m_vLastCoords.y * pSurface->m_pMonitor->scale, 100 / SCALEBUFS.x, 0, 2 * M_PI);
+            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, 100 / SCALEBUFS.x, 0, 2 * M_PI);
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
 
@@ -406,10 +424,10 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
             cairo_pattern_destroy(PATTERN);
         }
-    } else if (!g_pHyprpicker->m_bRenderInactive) {
+    } else if (!m_bRenderInactive) {
         cairo_set_operator(PCAIRO, CAIRO_OPERATOR_SOURCE);
         cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
-        cairo_rectangle(PCAIRO, 0, 0, pSurface->m_pMonitor->size.x * pSurface->m_pMonitor->scale, pSurface->m_pMonitor->size.y * pSurface->m_pMonitor->scale);
+        cairo_rectangle(PCAIRO, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
         cairo_fill(PCAIRO);
     } else {
         const auto SCALEBUFS  = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
@@ -537,10 +555,8 @@ void CHyprpicker::initMouse() {
         const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
 
         // get the px and print it
-        const auto SCALE = Vector2D{m_pLastSurface->screenBuffer->pixelSize.x / (m_pLastSurface->buffers[0]->pixelSize.x / m_pLastSurface->m_pMonitor->scale),
-                                    m_pLastSurface->screenBuffer->pixelSize.y / (m_pLastSurface->buffers[0]->pixelSize.y / m_pLastSurface->m_pMonitor->scale)};
-
-        const auto CLICKPOS = m_vLastCoords.floor() * SCALE;
+        const auto MOUSECOORDSABS = m_vLastCoords.floor() / m_pLastSurface->m_pMonitor->size;
+        const auto CLICKPOS       = MOUSECOORDSABS * m_pLastSurface->screenBuffer->pixelSize;
 
         const auto COL = getColorFromPixel(m_pLastSurface, CLICKPOS);
 

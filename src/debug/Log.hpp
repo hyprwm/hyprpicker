@@ -9,9 +9,11 @@ enum LogLevel {
     WARN,
     ERR,
     CRIT,
-    INFO
+    INFO,
+    TRACE,
 };
 
 namespace Debug {
-    void log(LogLevel level, const char* fmt, ...);
+    inline bool quiet = false, verbose = false;
+    void        log(LogLevel level, const char* fmt, ...);
 };

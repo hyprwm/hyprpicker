@@ -13,6 +13,17 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
         return;
     }
 
+    if (!g_pHyprpicker->m_bNoFractional) {
+        pViewport = makeShared<CCWpViewport>(g_pHyprpicker->m_pViewporter->sendGetViewport(pSurface->resource()));
+
+        // this will not actually be used, as we assume we'll be fullscreen and we can get the real dimensions from screencopy, but we'll have
+        // this for if we need it in the future
+        pFractionalScale = makeShared<CCWpFractionalScaleV1>(g_pHyprpicker->m_pFractionalMgr->sendGetFractionalScale(pSurface->resource()));
+        pFractionalScale->setPreferredScale([this](CCWpFractionalScaleV1* r, uint32_t scale120) { //
+            Debug::log(TRACE, "Received a preferredScale for %s: %.2f", m_pMonitor->name.c_str(), scale120 / 120.F);
+        });
+    }
+
     pLayerSurface = makeShared<CCZwlrLayerSurfaceV1>(
         g_pHyprpicker->m_pLayerShell->sendGetLayerSurface(pSurface->resource(), pMonitor->output->resource(), ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "hyprpicker"));
 
@@ -62,8 +73,15 @@ void CLayerSurface::sendFrame() {
     frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());
     frameCallback->setDone([this](CCWlCallback* r, uint32_t when) { onCallbackDone(this, when); });
 
-    pSurface->sendAttach(lastBuffer == 0 ? buffers[0]->buffer.get() : buffers[1]->buffer.get(), 0, 0);
-    pSurface->sendSetBufferScale(m_pMonitor->scale);
+    const auto& PBUFFER = lastBuffer == 0 ? buffers[0] : buffers[1];
+
+    pSurface->sendAttach(PBUFFER->buffer.get(), 0, 0);
+    if (!g_pHyprpicker->m_bNoFractional) {
+        pSurface->sendSetBufferScale(1);
+        pViewport->sendSetDestination(m_pMonitor->size.x, m_pMonitor->size.y);
+    } else
+        pSurface->sendSetBufferScale(m_pMonitor->scale);
+
     pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
     pSurface->sendCommit();
 
