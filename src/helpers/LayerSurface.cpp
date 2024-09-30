@@ -90,12 +90,7 @@ void CLayerSurface::sendFrame() {
 
 void CLayerSurface::markDirty() {
     frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());
-    frameCallback->setDone([this](CCWlCallback* r, uint32_t when) {
-        frameCallback.reset();
-
-        if (dirty || !rendered)
-            g_pHyprpicker->renderSurface(g_pHyprpicker->m_pLastSurface);
-    });
+    frameCallback->setDone([this](CCWlCallback* r, uint32_t when) { onCallbackDone(this, when); });
     pSurface->sendCommit();
 
     dirty = true;
