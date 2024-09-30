@@ -10,17 +10,7 @@ Launch it. Click. That's it.
 
 ## Options
 
-`-f | --format=[fmt]` specifies the output format (`cmyk`, `hex`, `rgb`, `hsl`, `hsv`)
-
-`-n | --no-fancy` disables the "fancy" (aka. colored) outputting
-
-`-h | --help` prints a help message
-
-`-a | --autocopy` automatically copies the output to the clipboard (requires [wl-clipboard](https://github.com/bugaevc/wl-clipboard))
-
-`-r | --render-inactive` render (freeze) inactive displays too
-
-`-z | --no-zoom` disable the zoom lens
+See `hyprpicker --help`.
 
 # Building
 
