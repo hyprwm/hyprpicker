@@ -457,6 +457,11 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 }
 
 CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
+    pix = pix.floor();
+
+    if (pix.x >= pLS->screenBuffer->pixelSize.x || pix.y >= pLS->screenBuffer->pixelSize.y)
+        return CColor{0, 0, 0, 0};
+
     void* dataSrc = pLS->screenBuffer->paddedData ? pLS->screenBuffer->paddedData : pLS->screenBuffer->data;
     struct pixel {
         unsigned char blue;
