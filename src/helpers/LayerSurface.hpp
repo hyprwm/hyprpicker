@@ -20,9 +20,11 @@ class CLayerSurface {
     SP<CCWpViewport>          pViewport        = nullptr;
     SP<CCWpFractionalScaleV1> pFractionalScale = nullptr;
 
-    bool                      wantsACK  = false;
-    uint32_t                  ACKSerial = 0;
-    bool                      working   = false;
+    float                     fractionalScale = 1.F;
+    bool                      wantsACK        = false;
+    bool                      wantsReload     = false;
+    uint32_t                  ACKSerial       = 0;
+    bool                      working         = false;
 
     int                       lastBuffer = 0;
     SP<SPoolBuffer>           buffers[2];
