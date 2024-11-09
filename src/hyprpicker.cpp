@@ -147,13 +147,17 @@ void CHyprpicker::finish(int code) {
 
 void CHyprpicker::recheckACK() {
     for (auto& ls : m_vLayerSurfaces) {
-        if (ls->wantsACK) {
-            ls->wantsACK = false;
-            ls->pLayerSurface->sendAckConfigure(ls->ACKSerial);
+        if ((ls->wantsACK || ls->wantsReload) && ls->screenBuffer) {
+            if (ls->wantsACK)
+                ls->pLayerSurface->sendAckConfigure(ls->ACKSerial);
+            ls->wantsACK    = false;
+            ls->wantsReload = false;
 
-            const auto MONITORSIZE = ls->screenBuffer && !g_pHyprpicker->m_bNoFractional ? ls->screenBuffer->pixelSize : ls->m_pMonitor->size * ls->m_pMonitor->scale;
+            const auto MONITORSIZE =
+                (ls->screenBuffer && !g_pHyprpicker->m_bNoFractional ? ls->m_pMonitor->size * ls->fractionalScale : ls->m_pMonitor->size * ls->m_pMonitor->scale).round();
 
             if (!ls->buffers[0] || ls->buffers[0]->pixelSize != MONITORSIZE) {
+                Debug::log(TRACE, "making new buffers: size changed to %.0fx%.0f", MONITORSIZE.x, MONITORSIZE.y);
                 ls->buffers[0] = makeShared<SPoolBuffer>(MONITORSIZE, WL_SHM_FORMAT_ARGB8888, MONITORSIZE.x * 4);
                 ls->buffers[1] = makeShared<SPoolBuffer>(MONITORSIZE, WL_SHM_FORMAT_ARGB8888, MONITORSIZE.x * 4);
             }
@@ -359,6 +363,8 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         const auto SCALEBUFS      = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
         const auto MOUSECOORDSABS = m_vLastCoords.floor() / pSurface->m_pMonitor->size;
         const auto CLICKPOS       = MOUSECOORDSABS * PBUFFER->pixelSize;
+
+        Debug::log(TRACE, "renderSurface: scalebufs %.2fx%.2f", SCALEBUFS.x, SCALEBUFS.y);
 
         const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);

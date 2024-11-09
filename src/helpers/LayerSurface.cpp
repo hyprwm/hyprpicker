@@ -21,6 +21,9 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
         pFractionalScale = makeShared<CCWpFractionalScaleV1>(g_pHyprpicker->m_pFractionalMgr->sendGetFractionalScale(pSurface->resource()));
         pFractionalScale->setPreferredScale([this](CCWpFractionalScaleV1* r, uint32_t scale120) { //
             Debug::log(TRACE, "Received a preferredScale for %s: %.2f", m_pMonitor->name.c_str(), scale120 / 120.F);
+            fractionalScale = scale120 / 120.F;
+            wantsReload     = true;
+            g_pHyprpicker->recheckACK();
         });
     }
 

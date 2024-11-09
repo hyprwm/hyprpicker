@@ -39,6 +39,8 @@ void SMonitor::initSCFrame() {
         if (pLS->m_pMonitor->transform % 2 == 1)
             std::swap(transformedSize.x, transformedSize.y);
 
+        Debug::log(TRACE, "Frame ready: pixel %.0fx%.0f, xfmd: %.0fx%.0f", pLS->screenBuffer->pixelSize.x, pLS->screenBuffer->pixelSize.y, transformedSize.x, transformedSize.y);
+
         SP<SPoolBuffer> newBuf = makeShared<SPoolBuffer>(transformedSize, pLS->screenBufferFormat, transformedSize.x * 4);
 
         int             bytesPerPixel = pLS->screenBuffer->stride / (int)pLS->screenBuffer->pixelSize.x;
@@ -112,7 +114,7 @@ void SMonitor::initSCFrame() {
 
         pSCFrame.reset();
     });
-    pSCFrame->setFailed([this](CCZwlrScreencopyFrameV1* r) {
+    pSCFrame->setFailed([](CCZwlrScreencopyFrameV1* r) {
         Debug::log(CRIT, "Failed to get a Screencopy!");
         g_pHyprpicker->finish(1);
     });
