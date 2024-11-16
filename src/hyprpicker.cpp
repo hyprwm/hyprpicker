@@ -388,6 +388,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         // |           |
         // | --------- |
         //
+        // (#hex code here)
 
         cairo_restore(PCAIRO);
         if (!m_bNoZoom) {
@@ -424,6 +425,22 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
 
+            const auto THECOLOR = getColorFromPixel(pSurface, CLICKPOS);
+            printf("thecolor has been gotten and it is %d %d %d\n", THECOLOR.r, THECOLOR.g, THECOLOR.b);
+
+            char hexBuffer[8];
+            sprintf(hexBuffer, "#%02x%02x%02x", THECOLOR.r, THECOLOR.g, THECOLOR.b);
+
+            cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 1.0);
+            printf("hallo\n");
+            cairo_select_font_face(PCAIRO, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_set_font_size(PCAIRO, 18);
+            cairo_move_to(PCAIRO, CLICKPOS.x, CLICKPOS.y + 40);
+            printf("pos is %f %f\n", CLICKPOS.x, CLICKPOS.y);
+            printf("Rendering hex code at position: (%f, %f)\n", CLICKPOS.x, CLICKPOS.y + 40);
+
+            printf("hexbuffer contains %s\n", hexBuffer);
+            cairo_show_text(PCAIRO, hexBuffer);
             cairo_surface_flush(PBUFFER->surface);
 
             cairo_restore(PCAIRO);
@@ -447,7 +464,6 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         cairo_paint(PCAIRO);
 
         cairo_surface_flush(PBUFFER->surface);
-
         cairo_pattern_destroy(PATTERNPRE);
     }
 
