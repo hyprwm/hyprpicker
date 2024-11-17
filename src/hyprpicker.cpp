@@ -429,6 +429,10 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             char       hexBuffer[8];
             sprintf(hexBuffer, "#%02x%02x%02x", currentColor.r, currentColor.g, currentColor.b);
 
+            cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
+            cairo_rectangle(PCAIRO, CLICKPOS.x, CLICKPOS.y + 20, 80, 30);
+            cairo_fill(PCAIRO);
+
             cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 1.0);
             cairo_select_font_face(PCAIRO, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
             cairo_set_font_size(PCAIRO, 18);
