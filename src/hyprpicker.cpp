@@ -425,9 +425,8 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
 
-            const auto currentColor = getColorFromPixel(pSurface, CLICKPOS);
-            char       hexBuffer[8];
-            sprintf(hexBuffer, "#%02X%02X%02X", currentColor.r, currentColor.g, currentColor.b);
+            const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
+            std::string hexBuffer    = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
 
             cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
 
@@ -473,7 +472,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
             }
 
-            cairo_show_text(PCAIRO, hexBuffer);
+            cairo_show_text(PCAIRO, hexBuffer.c_str());
 
             cairo_surface_flush(PBUFFER->surface);
             cairo_restore(PCAIRO);
