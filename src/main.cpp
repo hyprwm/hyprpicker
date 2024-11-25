@@ -15,7 +15,8 @@ static void help(void) {
               << " -q | --quiet             | Disable most logs (leaves errors)\n"
               << " -v | --verbose           | Enable more logs\n"
               << " -t | --no-fractional     | Disable fractional scaling support\n"
-              << " -V | --version           | Print version info\n";
+              << " -V | --version           | Print version info\n"
+              << " -d | --disable-live      | Disable live preview of Hex code\n";
 }
 
 int main(int argc, char** argv, char** envp) {
@@ -23,19 +24,12 @@ int main(int argc, char** argv, char** envp) {
 
     while (true) {
         int                  option_index   = 0;
-        static struct option long_options[] = {{"autocopy", no_argument, NULL, 'a'},
-                                               {"format", required_argument, NULL, 'f'},
-                                               {"help", no_argument, NULL, 'h'},
-                                               {"no-fancy", no_argument, NULL, 'n'},
-                                               {"render-inactive", no_argument, NULL, 'r'},
-                                               {"no-zoom", no_argument, NULL, 'z'},
-                                               {"no-fractional", no_argument, NULL, 't'},
-                                               {"quiet", no_argument, NULL, 'q'},
-                                               {"verbose", no_argument, NULL, 'v'},
-                                               {"version", no_argument, NULL, 'V'},
-                                               {NULL, 0, NULL, 0}};
+        static struct option long_options[] = {{"autocopy", no_argument, NULL, 'a'},      {"format", required_argument, NULL, 'f'},    {"help", no_argument, NULL, 'h'},
+                                               {"no-fancy", no_argument, NULL, 'n'},      {"render-inactive", no_argument, NULL, 'r'}, {"no-zoom", no_argument, NULL, 'z'},
+                                               {"no-fractional", no_argument, NULL, 't'}, {"quiet", no_argument, NULL, 'q'},           {"verbose", no_argument, NULL, 'v'},
+                                               {"version", no_argument, NULL, 'V'},       {"disable-live", no_argument, NULL, 'd'},    {NULL, 0, NULL, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnarzqvtV", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnarzqvtVd", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -64,6 +58,7 @@ int main(int argc, char** argv, char** envp) {
             case 't': g_pHyprpicker->m_bNoFractional = true; break;
             case 'q': Debug::quiet = true; break;
             case 'v': Debug::verbose = true; break;
+            case 'd': g_pHyprpicker->m_bDisableLive = true; break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
                 exit(0);
