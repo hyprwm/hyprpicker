@@ -462,15 +462,14 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 double padding = 5.0;
                 double textX   = x + padding;
 
-                if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
+                if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
                     cairo_move_to(PCAIRO, textX, CLICKPOS.y - 20);
-                } else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50)) {
+                else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50))
                     cairo_move_to(PCAIRO, textX, CLICKPOS.y - 20);
-                } else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
+                else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
                     cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
-                } else {
+                else
                     cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
-                }
 
                 cairo_show_text(PCAIRO, hexBuffer.c_str());
 

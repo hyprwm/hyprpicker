@@ -6,17 +6,17 @@
 
 static void help(void) {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n"
-              << " -a | --autocopy          | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
-              << " -f | --format=fmt        | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
-              << " -n | --no-fancy          | Disables the \"fancy\" (aka. colored) outputting\n"
-              << " -h | --help              | Show this help message\n"
-              << " -r | --render-inactive   | Render (freeze) inactive displays\n"
-              << " -z | --no-zoom           | Disable the zoom lens\n"
-              << " -q | --quiet             | Disable most logs (leaves errors)\n"
-              << " -v | --verbose           | Enable more logs\n"
-              << " -t | --no-fractional     | Disable fractional scaling support\n"
-              << " -V | --version           | Print version info\n"
-              << " -d | --disable-live      | Disable live preview of Hex code\n";
+              << " -a | --autocopy            | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
+              << " -f | --format=fmt          | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
+              << " -n | --no-fancy            | Disables the \"fancy\" (aka. colored) outputting\n"
+              << " -h | --help                | Show this help message\n"
+              << " -r | --render-inactive     | Render (freeze) inactive displays\n"
+              << " -z | --no-zoom             | Disable the zoom lens\n"
+              << " -q | --quiet               | Disable most logs (leaves errors)\n"
+              << " -v | --verbose             | Enable more logs\n"
+              << " -t | --no-fractional       | Disable fractional scaling support\n"
+              << " -d | --disable-hex-preview | Disable live preview of Hex code\n"
+              << " -V | --version             | Print version info\n";
 }
 
 int main(int argc, char** argv, char** envp) {
@@ -24,10 +24,18 @@ int main(int argc, char** argv, char** envp) {
 
     while (true) {
         int                  option_index   = 0;
-        static struct option long_options[] = {{"autocopy", no_argument, NULL, 'a'},      {"format", required_argument, NULL, 'f'},    {"help", no_argument, NULL, 'h'},
-                                               {"no-fancy", no_argument, NULL, 'n'},      {"render-inactive", no_argument, NULL, 'r'}, {"no-zoom", no_argument, NULL, 'z'},
-                                               {"no-fractional", no_argument, NULL, 't'}, {"quiet", no_argument, NULL, 'q'},           {"verbose", no_argument, NULL, 'v'},
-                                               {"version", no_argument, NULL, 'V'},       {"disable-live", no_argument, NULL, 'd'},    {NULL, 0, NULL, 0}};
+        static struct option long_options[] = {{"autocopy", no_argument, NULL, 'a'},
+                                               {"format", required_argument, NULL, 'f'},
+                                               {"help", no_argument, NULL, 'h'},
+                                               {"no-fancy", no_argument, NULL, 'n'},
+                                               {"render-inactive", no_argument, NULL, 'r'},
+                                               {"no-zoom", no_argument, NULL, 'z'},
+                                               {"no-fractional", no_argument, NULL, 't'},
+                                               {"quiet", no_argument, NULL, 'q'},
+                                               {"verbose", no_argument, NULL, 'v'},
+                                               {"version", no_argument, NULL, 'V'},
+                                               {"disable-hex-preview", no_argument, NULL, 'd'},
+                                               {NULL, 0, NULL, 0}};
 
         int                  c = getopt_long(argc, argv, ":f:hnarzqvtVd", long_options, &option_index);
         if (c == -1)
