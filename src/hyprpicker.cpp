@@ -388,6 +388,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         // |           |
         // | --------- |
         //
+        // (hex code here)
 
         cairo_restore(PCAIRO);
         if (!m_bNoZoom) {
@@ -424,10 +425,58 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
 
-            cairo_surface_flush(PBUFFER->surface);
+            if (!m_bDisableHexPreview) {
+                const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
+                std::string hexBuffer    = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
 
+                cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
+
+                double x, y, width = 85, height = 28, radius = 6;
+
+                if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
+                    x = CLICKPOS.x - 80;
+                    y = CLICKPOS.y - 40;
+                } else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50)) {
+                    x = CLICKPOS.x;
+                    y = CLICKPOS.y - 40;
+                } else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
+                    x = CLICKPOS.x - 80;
+                    y = CLICKPOS.y + 20;
+                } else {
+                    x = CLICKPOS.x;
+                    y = CLICKPOS.y + 20;
+                }
+
+                cairo_move_to(PCAIRO, x + radius, y);
+                cairo_arc(PCAIRO, x + width - radius, y + radius, radius, -M_PI_2, 0);
+                cairo_arc(PCAIRO, x + width - radius, y + height - radius, radius, 0, M_PI_2);
+                cairo_arc(PCAIRO, x + radius, y + height - radius, radius, M_PI_2, M_PI);
+                cairo_arc(PCAIRO, x + radius, y + radius, radius, M_PI, -M_PI_2);
+
+                cairo_close_path(PCAIRO);
+                cairo_fill(PCAIRO);
+
+                cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 1.0);
+                cairo_select_font_face(PCAIRO, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+                cairo_set_font_size(PCAIRO, 18);
+
+                double padding = 5.0;
+                double textX   = x + padding;
+
+                if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
+                    cairo_move_to(PCAIRO, textX, CLICKPOS.y - 20);
+                else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50))
+                    cairo_move_to(PCAIRO, textX, CLICKPOS.y - 20);
+                else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
+                    cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
+                else
+                    cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
+
+                cairo_show_text(PCAIRO, hexBuffer.c_str());
+
+                cairo_surface_flush(PBUFFER->surface);
+            }
             cairo_restore(PCAIRO);
-
             cairo_pattern_destroy(PATTERN);
         }
     } else if (!m_bRenderInactive) {
@@ -447,7 +496,6 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         cairo_paint(PCAIRO);
 
         cairo_surface_flush(PBUFFER->surface);
-
         cairo_pattern_destroy(PATTERNPRE);
     }
 

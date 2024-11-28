@@ -6,16 +6,17 @@
 
 static void help(void) {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n"
-              << " -a | --autocopy          | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
-              << " -f | --format=fmt        | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
-              << " -n | --no-fancy          | Disables the \"fancy\" (aka. colored) outputting\n"
-              << " -h | --help              | Show this help message\n"
-              << " -r | --render-inactive   | Render (freeze) inactive displays\n"
-              << " -z | --no-zoom           | Disable the zoom lens\n"
-              << " -q | --quiet             | Disable most logs (leaves errors)\n"
-              << " -v | --verbose           | Enable more logs\n"
-              << " -t | --no-fractional     | Disable fractional scaling support\n"
-              << " -V | --version           | Print version info\n";
+              << " -a | --autocopy            | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
+              << " -f | --format=fmt          | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
+              << " -n | --no-fancy            | Disables the \"fancy\" (aka. colored) outputting\n"
+              << " -h | --help                | Show this help message\n"
+              << " -r | --render-inactive     | Render (freeze) inactive displays\n"
+              << " -z | --no-zoom             | Disable the zoom lens\n"
+              << " -q | --quiet               | Disable most logs (leaves errors)\n"
+              << " -v | --verbose             | Enable more logs\n"
+              << " -t | --no-fractional       | Disable fractional scaling support\n"
+              << " -d | --disable-hex-preview | Disable live preview of Hex code\n"
+              << " -V | --version             | Print version info\n";
 }
 
 int main(int argc, char** argv, char** envp) {
@@ -32,10 +33,11 @@ int main(int argc, char** argv, char** envp) {
                                                {"no-fractional", no_argument, NULL, 't'},
                                                {"quiet", no_argument, NULL, 'q'},
                                                {"verbose", no_argument, NULL, 'v'},
+                                               {"disable-hex-preview", no_argument, NULL, 'd'},
                                                {"version", no_argument, NULL, 'V'},
                                                {NULL, 0, NULL, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnarzqvtV", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnarzqvtdV", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -64,6 +66,7 @@ int main(int argc, char** argv, char** envp) {
             case 't': g_pHyprpicker->m_bNoFractional = true; break;
             case 'q': Debug::quiet = true; break;
             case 'v': Debug::verbose = true; break;
+            case 'd': g_pHyprpicker->m_bDisableHexPreview = true; break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
                 exit(0);
