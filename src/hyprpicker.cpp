@@ -424,7 +424,8 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, 100 / SCALEBUFS.x, 0, 2 * M_PI);
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
-            if (!m_bDisableLive) {
+
+            if (!m_bDisableHexPreview) {
                 const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
                 std::string hexBuffer    = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
 

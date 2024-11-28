@@ -33,8 +33,8 @@ int main(int argc, char** argv, char** envp) {
                                                {"no-fractional", no_argument, NULL, 't'},
                                                {"quiet", no_argument, NULL, 'q'},
                                                {"verbose", no_argument, NULL, 'v'},
-                                               {"version", no_argument, NULL, 'V'},
                                                {"disable-hex-preview", no_argument, NULL, 'd'},
+                                               {"version", no_argument, NULL, 'V'},
                                                {NULL, 0, NULL, 0}};
 
         int                  c = getopt_long(argc, argv, ":f:hnarzqvtVd", long_options, &option_index);
@@ -66,7 +66,7 @@ int main(int argc, char** argv, char** envp) {
             case 't': g_pHyprpicker->m_bNoFractional = true; break;
             case 'q': Debug::quiet = true; break;
             case 'v': Debug::verbose = true; break;
-            case 'd': g_pHyprpicker->m_bDisableLive = true; break;
+            case 'd': g_pHyprpicker->m_bDisableHexPreview = true; break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
                 exit(0);
