@@ -37,7 +37,7 @@ int main(int argc, char** argv, char** envp) {
                                                {"version", no_argument, NULL, 'V'},
                                                {NULL, 0, NULL, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnarzqvtVd", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnarzqvtdV", long_options, &option_index);
         if (c == -1)
             break;
 
