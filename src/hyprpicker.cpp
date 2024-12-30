@@ -573,7 +573,7 @@ void CHyprpicker::initKeyboard() {
 }
 
 void CHyprpicker::initMouse() {
-    m_pPointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_resource* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+    m_pPointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_proxy* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
         auto x = wl_fixed_to_double(surface_x);
         auto y = wl_fixed_to_double(surface_y);
 
@@ -590,7 +590,7 @@ void CHyprpicker::initMouse() {
 
         m_pCursorShapeDevice->sendSetShape(serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
     });
-    m_pPointer->setLeave([this](CCWlPointer* r, uint32_t timeMs, wl_resource* surf) {
+    m_pPointer->setLeave([this](CCWlPointer* r, uint32_t timeMs, wl_proxy* surf) {
         for (auto& ls : m_vLayerSurfaces) {
             if (ls->pSurface->resource() == surf) {
                 renderSurface(ls.get(), true);
