@@ -16,7 +16,7 @@ static void help(void) {
               << " -v | --verbose             | Enable more logs\n"
               << " -t | --no-fractional       | Disable fractional scaling support\n"
               << " -d | --disable-hex-preview | Disable live preview of Hex code\n"
-              << " -l | --lowercase-hex | Outputs the hexcode in lowercase\n"
+              << " -l | --lowercase-hex       | Outputs the hexcode in lowercase\n"
               << " -V | --version             | Print version info\n";
 }
 

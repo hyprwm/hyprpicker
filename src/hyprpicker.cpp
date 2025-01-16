@@ -428,11 +428,10 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             if (!m_bDisableHexPreview) {
                 const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
                 std::string hexBuffer;
-                if (m_bUseLowerCase) {
+                if (m_bUseLowerCase)
                     hexBuffer = std::format("#{:02x}{:02x}{:02x}", currentColor.r, currentColor.g, currentColor.b);
-                } else {
+                else
                     hexBuffer = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
-                }
 
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
 
