@@ -16,6 +16,7 @@ static void help(void) {
               << " -v | --verbose             | Enable more logs\n"
               << " -t | --no-fractional       | Disable fractional scaling support\n"
               << " -d | --disable-hex-preview | Disable live preview of Hex code\n"
+              << " -l | --lowercase-hex | Outputs the hexcode in lowercase\n"
               << " -V | --version             | Print version info\n";
 }
 
@@ -34,10 +35,11 @@ int main(int argc, char** argv, char** envp) {
                                                {"quiet", no_argument, NULL, 'q'},
                                                {"verbose", no_argument, NULL, 'v'},
                                                {"disable-hex-preview", no_argument, NULL, 'd'},
+                                               {"lowercase-hex", no_argument, NULL, 'l'},
                                                {"version", no_argument, NULL, 'V'},
                                                {NULL, 0, NULL, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnarzqvtdV", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnarzqvtdlV", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -67,6 +69,7 @@ int main(int argc, char** argv, char** envp) {
             case 'q': Debug::quiet = true; break;
             case 'v': Debug::verbose = true; break;
             case 'd': g_pHyprpicker->m_bDisableHexPreview = true; break;
+            case 'l': g_pHyprpicker->m_bUseLowerCase = true; break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
                 exit(0);

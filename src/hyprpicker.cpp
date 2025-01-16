@@ -427,7 +427,12 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
             if (!m_bDisableHexPreview) {
                 const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
-                std::string hexBuffer    = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
+                std::string hexBuffer;
+                if (m_bUseLowerCase) {
+                    hexBuffer = std::format("#{:02x}{:02x}{:02x}", currentColor.r, currentColor.g, currentColor.b);
+                } else {
+                    hexBuffer = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
+                }
 
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
 
@@ -647,8 +652,8 @@ void CHyprpicker::initMouse() {
                 break;
             }
             case OUTPUT_HEX: {
-                auto toHex = [](int i) -> std::string {
-                    const char* DS = "0123456789ABCDEF";
+                auto toHex = [this](int i) -> std::string {
+                    const char* DS = m_bUseLowerCase ? "0123456789abcdef" : "0123456789ABCDEF";
 
                     std::string result = "";
 
@@ -657,6 +662,9 @@ void CHyprpicker::initMouse() {
 
                     return result;
                 };
+                auto hexR = toHex(COL.r);
+                auto hexG = toHex(COL.g);
+                auto hexB = toHex(COL.b);
 
                 if (m_bFancyOutput)
                     Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im#%s%s%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(),
