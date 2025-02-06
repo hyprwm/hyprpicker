@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <print>
 
 #include "../includes.hpp"
 
@@ -38,7 +39,7 @@ void Debug::log(LogLevel level, const char* fmt, ...) {
         outputStr = (char*)malloc(logLen + 1);
 
         if (!outputStr) {
-            printf("CRITICAL: Cannot alloc size %d for log! (Out of memory?)", logLen + 1);
+            std::print("CRITICAL: Cannot alloc size {} for log! (Out of memory?)", logLen + 1);
             return;
         }
 

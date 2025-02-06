@@ -11,7 +11,7 @@ SPoolBuffer::SPoolBuffer(const Vector2D& pixelSize_, uint32_t format_, uint32_t 
         g_pHyprpicker->finish(1);
     }
 
-    const auto DATA = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
+    const auto DATA = mmap(nullptr, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
 
     size = SIZE;
     data = DATA;

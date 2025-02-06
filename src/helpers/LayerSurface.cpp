@@ -2,9 +2,7 @@
 
 #include "../hyprpicker.hpp"
 
-CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
-    m_pMonitor = pMonitor;
-
+CLayerSurface::CLayerSurface(SMonitor* pMonitor) : m_pMonitor(pMonitor) {
     pSurface = makeShared<CCWlSurface>(g_pHyprpicker->m_pCompositor->sendCreateSurface());
 
     if (!pSurface) {
