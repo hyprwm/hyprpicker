@@ -14,7 +14,6 @@ void Clipboard::copy(const char* fmt, ...) {
     outputStr = strdup(buf);
 
     if (fork() == 0)
-        // clang-tidy didn't warn about that NULL... what?
         execlp("wl-copy", "wl-copy", outputStr, nullptr);
 
     free(outputStr);
