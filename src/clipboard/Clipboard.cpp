@@ -14,7 +14,7 @@ void Clipboard::copy(const char* fmt, ...) {
     outputStr = strdup(buf);
 
     if (fork() == 0)
-        execlp("wl-copy", "wl-copy", outputStr, nullptr);
+        execlp("wl-copy", "wl-copy", outputStr, NULL);
 
     free(outputStr);
 }
