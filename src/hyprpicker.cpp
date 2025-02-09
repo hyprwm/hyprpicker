@@ -526,8 +526,7 @@ CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
         unsigned char green;
         unsigned char red;
         unsigned char alpha;
-        // Implicit widening to the ptrdiff_t happens with the pix.y and pix.x * 4. Maybe cast them to the ptrdiff_t and not to int?
-    }* px = (struct pixel*)((char*)dataSrc + ((int)pix.y * (int)pLS->screenBuffer->pixelSize.x * 4) + ((int)pix.x * 4));
+    }* px = (struct pixel*)((char*)dataSrc + ((ptrdiff_t)pix.y * (int)pLS->screenBuffer->pixelSize.x * 4) + ((ptrdiff_t)pix.x * 4));
 
     return CColor{.r = px->red, .g = px->green, .b = px->blue, .a = px->alpha};
 }
