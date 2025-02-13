@@ -5,7 +5,7 @@ string(STRIP ${VER_RAW} VERSION)
 
 project(
   hyprpicker
-  DESCRIPTION "A blazing fast wayland wallpaper utility"
+  DESCRIPTION "A wlroots-compatible Wayland color picker that does not suck"
   VERSION ${VERSION})
 
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
