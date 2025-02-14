@@ -721,7 +721,7 @@ void CHyprpicker::initMouse() {
                     l_or_v = std::round(v * 100);
                 }
 
-                h = std::round(h<0?h+360:h);
+                h = std::round(h < 0 ? h + 360 : h);
                 s = std::round(s * 100);
 
                 if (m_bFancyOutput)
