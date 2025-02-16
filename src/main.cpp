@@ -4,7 +4,7 @@
 
 #include "hyprpicker.hpp"
 
-static void help(void) {
+static void help() {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n"
               << " -a | --autocopy            | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
               << " -f | --format=fmt          | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
@@ -25,19 +25,19 @@ int main(int argc, char** argv, char** envp) {
 
     while (true) {
         int                  option_index   = 0;
-        static struct option long_options[] = {{"autocopy", no_argument, NULL, 'a'},
-                                               {"format", required_argument, NULL, 'f'},
-                                               {"help", no_argument, NULL, 'h'},
-                                               {"no-fancy", no_argument, NULL, 'n'},
-                                               {"render-inactive", no_argument, NULL, 'r'},
-                                               {"no-zoom", no_argument, NULL, 'z'},
-                                               {"no-fractional", no_argument, NULL, 't'},
-                                               {"quiet", no_argument, NULL, 'q'},
-                                               {"verbose", no_argument, NULL, 'v'},
-                                               {"disable-hex-preview", no_argument, NULL, 'd'},
-                                               {"lowercase-hex", no_argument, NULL, 'l'},
-                                               {"version", no_argument, NULL, 'V'},
-                                               {NULL, 0, NULL, 0}};
+        static struct option long_options[] = {{"autocopy", no_argument, nullptr, 'a'},
+                                               {"format", required_argument, nullptr, 'f'},
+                                               {"help", no_argument, nullptr, 'h'},
+                                               {"no-fancy", no_argument, nullptr, 'n'},
+                                               {"render-inactive", no_argument, nullptr, 'r'},
+                                               {"no-zoom", no_argument, nullptr, 'z'},
+                                               {"no-fractional", no_argument, nullptr, 't'},
+                                               {"quiet", no_argument, nullptr, 'q'},
+                                               {"verbose", no_argument, nullptr, 'v'},
+                                               {"disable-hex-preview", no_argument, nullptr, 'd'},
+                                               {"lowercase-hex", no_argument, nullptr, 'l'},
+                                               {"version", no_argument, nullptr, 'V'},
+                                               {nullptr, 0, nullptr, 0}};
 
         int                  c = getopt_long(argc, argv, ":f:hnarzqvtdlV", long_options, &option_index);
         if (c == -1)

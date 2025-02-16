@@ -42,15 +42,15 @@ execute_process(
 
 include_directories(.)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 add_compile_options(-DWLR_USE_UNSTABLE)
 add_compile_options(
   -Wall
   -Wextra
+  -Wuseless-cast
   -Wno-unused-parameter
   -Wno-unused-value
-  -Wno-missing-field-initializers
-  -Wno-narrowing
-  -Wno-pointer-arith)
+  -Wno-missing-field-initializers)
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
