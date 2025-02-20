@@ -7,6 +7,7 @@
 enum eOutputMode {
     OUTPUT_CMYK = 0,
     OUTPUT_HEX,
+    OUTPUT_LHEX,
     OUTPUT_RGB,
     OUTPUT_HSL,
     OUTPUT_HSV
@@ -44,8 +45,7 @@ class CHyprpicker {
     bool                                        m_bRenderInactive    = false;
     bool                                        m_bNoZoom            = false;
     bool                                        m_bNoFractional      = false;
-    bool                                        m_bDisableHexPreview = false;
-    bool                                        m_bUseLowerCase      = false;
+    bool                                        m_bDisablePreview = false;
 
     bool                                        m_bRunning = true;
 
