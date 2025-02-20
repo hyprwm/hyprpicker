@@ -496,7 +496,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
 
-                double x, y, width = 15+(10*previewBuffer.length()), height = 28, radius = 6;
+                double x, y, width = 8+(11*previewBuffer.length()), height = 28, radius = 6;
 
                 if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
                     x = CLICKPOS.x - 80;
@@ -511,7 +511,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                     x = CLICKPOS.x;
                     y = CLICKPOS.y + 20;
                 }
-
+                x-=5.5*previewBuffer.length();
                 cairo_move_to(PCAIRO, x + radius, y);
                 cairo_arc(PCAIRO, x + width - radius, y + radius, radius, -M_PI_2, 0);
                 cairo_arc(PCAIRO, x + width - radius, y + height - radius, radius, 0, M_PI_2);
