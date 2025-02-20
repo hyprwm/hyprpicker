@@ -661,7 +661,7 @@ void CHyprpicker::initMouse() {
 
                     return result;
                 };
-                // Use or delete?
+
                 auto hexR = toHex(COL.r);
                 auto hexG = toHex(COL.g);
                 auto hexB = toHex(COL.b);
