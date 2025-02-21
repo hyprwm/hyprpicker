@@ -4,7 +4,7 @@
 
 #include "hyprpicker.hpp"
 
-static void help(void) {
+static void help() {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n"
               << " -a | --autocopy            | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
               << " -f | --format=fmt          | Specifies the output format (cmyk, lhex, hex, rgb, hsl, hsv)\n"
@@ -15,7 +15,7 @@ static void help(void) {
               << " -q | --quiet               | Disable most logs (leaves errors)\n"
               << " -v | --verbose             | Enable more logs\n"
               << " -t | --no-fractional       | Disable fractional scaling support\n"
-              << " -d | --disable-preview | Disable live preview of color\n"
+              << " -d | --disable-preview     | Disable live preview of color\n"
               << " -V | --version             | Print version info\n";
 }
 
