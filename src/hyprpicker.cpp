@@ -1,5 +1,5 @@
 #include "hyprpicker.hpp"
-#include <signal.h>
+#include <csignal>
 
 void sigHandler(int sig) {
     g_pHyprpicker->m_vLayerSurfaces.clear();
@@ -248,7 +248,7 @@ void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
                         unsigned char green;
                         unsigned char red;
                         unsigned char alpha;
-                    }* px = (struct pixel*)(data + y * (int)pBuffer->pixelSize.x * 4 + x * 4);
+                    }* px = (struct pixel*)(data + (y * (int)pBuffer->pixelSize.x * 4) + (x * 4));
 
                     std::swap(px->red, px->blue);
                 }
@@ -262,7 +262,7 @@ void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
 
             for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
                 for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
-                    uint32_t* px = (uint32_t*)(data + y * (int)pBuffer->pixelSize.x * 4 + x * 4);
+                    uint32_t* px = (uint32_t*)(data + (y * (int)pBuffer->pixelSize.x * 4) + (x * 4));
 
                     // conv to 8 bit
                     uint8_t R = (uint8_t)std::round((255.0 * (((*px) & 0b00000000000000000000001111111111) >> 0) / 1023.0));
@@ -297,15 +297,15 @@ void* CHyprpicker::convert24To32Buffer(SP<SPoolBuffer> pBuffer) {
                         unsigned char blue;
                         unsigned char green;
                         unsigned char red;
-                    }* srcPx = (struct pixel3*)(oldBuffer + y * pBuffer->stride + x * 3);
+                    }* srcPx = (struct pixel3*)(oldBuffer + (y * pBuffer->stride) + (x * 3));
                     struct pixel4 {
                         // little-endian ARGB
                         unsigned char blue;
                         unsigned char green;
                         unsigned char red;
                         unsigned char alpha;
-                    }* dstPx = (struct pixel4*)(newBuffer + y * newBufferStride + x * 4);
-                    *dstPx   = {srcPx->red, srcPx->green, srcPx->blue, 0xFF};
+                    }* dstPx = (struct pixel4*)(newBuffer + (y * newBufferStride) + (x * 4));
+                    *dstPx   = {.blue = srcPx->red, .green = srcPx->green, .red = srcPx->blue, .alpha = 0xFF};
                 }
             }
         } break;
@@ -317,15 +317,15 @@ void* CHyprpicker::convert24To32Buffer(SP<SPoolBuffer> pBuffer) {
                         unsigned char red;
                         unsigned char green;
                         unsigned char blue;
-                    }* srcPx = (struct pixel3*)(oldBuffer + y * pBuffer->stride + x * 3);
+                    }* srcPx = (struct pixel3*)(oldBuffer + (y * pBuffer->stride) + (x * 3));
                     struct pixel4 {
                         // big-endian ARGB
                         unsigned char alpha;
                         unsigned char red;
                         unsigned char green;
                         unsigned char blue;
-                    }* dstPx = (struct pixel4*)(newBuffer + y * newBufferStride + x * 4);
-                    *dstPx   = {0xFF, srcPx->red, srcPx->green, srcPx->blue};
+                    }* dstPx = (struct pixel4*)(newBuffer + (y * newBufferStride) + (x * 4));
+                    *dstPx   = {.alpha = 0xFF, .red = srcPx->red, .green = srcPx->green, .blue = srcPx->blue};
                 }
             }
         } break;
@@ -418,7 +418,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_matrix_init_identity(&matrix);
             cairo_matrix_translate(&matrix, CLICKPOSBUF.x + 0.5f, CLICKPOSBUF.y + 0.5f);
             cairo_matrix_scale(&matrix, 0.1f, 0.1f);
-            cairo_matrix_translate(&matrix, -CLICKPOSBUF.x / SCALEBUFS.x - 0.5f, -CLICKPOSBUF.y / SCALEBUFS.y - 0.5f);
+            cairo_matrix_translate(&matrix, (-CLICKPOSBUF.x / SCALEBUFS.x) - 0.5f, (-CLICKPOSBUF.y / SCALEBUFS.y) - 0.5f);
             cairo_pattern_set_matrix(PATTERN, &matrix);
             cairo_set_source(PCAIRO, PATTERN);
             cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, 100 / SCALEBUFS.x, 0, 2 * M_PI);
@@ -518,7 +518,7 @@ CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
     pix = pix.floor();
 
     if (pix.x >= pLS->screenBuffer->pixelSize.x || pix.y >= pLS->screenBuffer->pixelSize.y || pix.x < 0 || pix.y < 0)
-        return CColor{0, 0, 0, 0};
+        return CColor{.r = 0, .g = 0, .b = 0, .a = 0};
 
     void* dataSrc = pLS->screenBuffer->paddedData ? pLS->screenBuffer->paddedData : pLS->screenBuffer->data;
     struct pixel {
@@ -526,9 +526,9 @@ CColor CHyprpicker::getColorFromPixel(CLayerSurface* pLS, Vector2D pix) {
         unsigned char green;
         unsigned char red;
         unsigned char alpha;
-    }* px = (struct pixel*)((char*)dataSrc + (int)pix.y * (int)pLS->screenBuffer->pixelSize.x * 4 + (int)pix.x * 4);
+    }* px = (struct pixel*)((char*)dataSrc + ((ptrdiff_t)pix.y * (int)pLS->screenBuffer->pixelSize.x * 4) + ((ptrdiff_t)pix.x * 4));
 
-    return CColor{(uint8_t)px->red, (uint8_t)px->green, (uint8_t)px->blue, (uint8_t)px->alpha};
+    return CColor{.r = px->red, .g = px->green, .b = px->blue, .a = px->alpha};
 }
 
 void CHyprpicker::initKeyboard() {
@@ -541,7 +541,7 @@ void CHyprpicker::initKeyboard() {
             return;
         }
 
-        const char* buf = (const char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+        const char* buf = (const char*)mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
         if (buf == MAP_FAILED) {
             Debug::log(ERR, "Failed to mmap xkb keymap: %d", errno);
             return;
@@ -631,7 +631,7 @@ void CHyprpicker::initMouse() {
             case OUTPUT_CMYK: {
                 // http://www.codeproject.com/KB/applications/xcmyk.aspx
 
-                float r = 1 - COL.r / 255.0f, g = 1 - COL.g / 255.0f, b = 1 - COL.b / 255.0f;
+                float r = 1 - (COL.r / 255.0f), g = 1 - (COL.g / 255.0f), b = 1 - (COL.b / 255.0f);
                 float k = fmin3(r, g, b), K = (k == 1) ? 1 : 1 - k;
                 float c = (r - k) / K, m = (g - k) / K, y = (b - k) / K;
 
@@ -661,6 +661,7 @@ void CHyprpicker::initMouse() {
 
                     return result;
                 };
+
                 auto hexR = toHex(COL.r);
                 auto hexG = toHex(COL.g);
                 auto hexB = toHex(COL.b);
