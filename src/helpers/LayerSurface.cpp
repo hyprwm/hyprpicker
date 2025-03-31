@@ -66,8 +66,10 @@ CLayerSurface::~CLayerSurface() {
 static void onCallbackDone(CLayerSurface* surf, uint32_t when) {
     surf->frameCallback.reset();
 
-    if (surf->dirty || !surf->rendered)
-        g_pHyprpicker->renderSurface(g_pHyprpicker->m_pLastSurface);
+    if (surf->dirty || !surf->rendered || surf->forceRerender)
+        g_pHyprpicker->renderSurface(surf);
+
+    surf->forceRerender = false;
 }
 
 void CLayerSurface::sendFrame() {

@@ -38,4 +38,5 @@ class CLayerSurface {
     bool                      rendered = false;
 
     SP<CCWlCallback>          frameCallback = nullptr;
+    bool                      forceRerender = false;
 };

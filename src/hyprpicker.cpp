@@ -169,8 +169,10 @@ void CHyprpicker::recheckACK() {
 
 void CHyprpicker::markDirty() {
     for (auto& ls : m_vLayerSurfaces) {
-        if (ls->frameCallback)
+        if (ls->frameCallback) {
+            ls->forceRerender = true;
             continue;
+        }
 
         ls->markDirty();
     }
@@ -341,7 +343,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     const auto PBUFFER = getBufferForLS(pSurface);
 
     if (!PBUFFER || !pSurface->screenBuffer) {
-        // Debug::log(ERR, PBUFFER ? "renderSurface: pSurface->screenBuffer null" : "renderSurface: PBUFFER null");
+        Debug::log(ERR, PBUFFER ? "renderSurface: pSurface->screenBuffer null" : "renderSurface: PBUFFER null");
         return;
     }
 
@@ -583,8 +585,6 @@ void CHyprpicker::initMouse() {
 
         m_vLastCoords = {x, y};
 
-        markDirty();
-
         for (auto& ls : m_vLayerSurfaces) {
             if (ls->pSurface->resource() == surface) {
                 m_pLastSurface = ls.get();
@@ -593,13 +593,19 @@ void CHyprpicker::initMouse() {
         }
 
         m_pCursorShapeDevice->sendSetShape(serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
+
+        markDirty();
     });
-    m_pPointer->setLeave([this](CCWlPointer* r, uint32_t timeMs, wl_proxy* surf) {
+    m_pPointer->setLeave([this](CCWlPointer* r, uint32_t timeMs, wl_proxy* surface) {
         for (auto& ls : m_vLayerSurfaces) {
-            if (ls->pSurface->resource() == surf) {
-                renderSurface(ls.get(), true);
+            if (ls->pSurface->resource() == surface) {
+                if (m_pLastSurface == ls.get())
+                    m_pLastSurface = nullptr;
+                break;
             }
         }
+
+        markDirty();
     });
     m_pPointer->setMotion([this](CCWlPointer* r, uint32_t timeMs, wl_fixed_t surface_x, wl_fixed_t surface_y) {
         auto x = wl_fixed_to_double(surface_x);
