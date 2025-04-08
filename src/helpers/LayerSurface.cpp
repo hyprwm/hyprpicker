@@ -96,7 +96,5 @@ void CLayerSurface::markDirty() {
     frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());
     frameCallback->setDone([this](CCWlCallback* r, uint32_t when) { onCallbackDone(this, when); });
 
-    pSurface->sendCommit();
-
     dirty = true;
 }
