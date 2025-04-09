@@ -86,6 +86,7 @@ void CLayerSurface::sendFrame() {
     } else
         pSurface->sendSetBufferScale(m_pMonitor->scale);
 
+    pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
     pSurface->sendCommit();
 
     dirty = false;
@@ -94,13 +95,6 @@ void CLayerSurface::sendFrame() {
 void CLayerSurface::markDirty() {
     frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());
     frameCallback->setDone([this](CCWlCallback* r, uint32_t when) { onCallbackDone(this, when); });
-
-    pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
-
-    if (buffers[lastBuffer])
-        pSurface->sendAttach(buffers[lastBuffer]->buffer.get(), 0, 0);
-
-    pSurface->sendCommit();
 
     dirty = true;
 }
