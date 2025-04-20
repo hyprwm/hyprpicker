@@ -67,8 +67,6 @@ static void onCallbackDone(CLayerSurface* surf, uint32_t when) {
     surf->frameCallback.reset();
 
     g_pHyprpicker->renderSurface(surf);
-
-    surf->forceRerender = false;
 }
 
 void CLayerSurface::sendFrame() {
@@ -88,8 +86,6 @@ void CLayerSurface::sendFrame() {
         pSurface->sendSetBufferScale(m_pMonitor->scale);
 
     pSurface->sendCommit();
-
-    dirty = false;
 }
 
 void CLayerSurface::markDirty() {
