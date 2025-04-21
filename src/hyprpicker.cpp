@@ -169,10 +169,8 @@ void CHyprpicker::recheckACK() {
 
 void CHyprpicker::markDirty() {
     for (auto& ls : m_vLayerSurfaces) {
-        if (ls->frameCallback) {
-            ls->forceRerender = true;
+        if (ls->frameCallback)
             continue;
-        }
 
         ls->markDirty();
     }

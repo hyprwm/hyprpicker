@@ -66,10 +66,7 @@ CLayerSurface::~CLayerSurface() {
 static void onCallbackDone(CLayerSurface* surf, uint32_t when) {
     surf->frameCallback.reset();
 
-    if (surf->dirty || !surf->rendered || surf->forceRerender)
-        g_pHyprpicker->renderSurface(surf);
-
-    surf->forceRerender = false;
+    g_pHyprpicker->renderSurface(surf);
 }
 
 void CLayerSurface::sendFrame() {
@@ -79,6 +76,8 @@ void CLayerSurface::sendFrame() {
     frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());
     frameCallback->setDone([this](CCWlCallback* r, uint32_t when) { onCallbackDone(this, when); });
 
+    pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
+
     pSurface->sendAttach(PBUFFER->buffer.get(), 0, 0);
     if (!g_pHyprpicker->m_bNoFractional) {
         pSurface->sendSetBufferScale(1);
@@ -86,10 +85,7 @@ void CLayerSurface::sendFrame() {
     } else
         pSurface->sendSetBufferScale(m_pMonitor->scale);
 
-    pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
     pSurface->sendCommit();
-
-    dirty = false;
 }
 
 void CLayerSurface::markDirty() {
