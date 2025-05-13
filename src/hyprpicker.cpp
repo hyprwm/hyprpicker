@@ -341,7 +341,8 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     const auto PBUFFER = getBufferForLS(pSurface);
 
     if (!PBUFFER || !pSurface->screenBuffer) {
-        Debug::log(ERR, PBUFFER ? "renderSurface: pSurface->screenBuffer null" : "renderSurface: PBUFFER null");
+        // Spammy log, doesn't matter.
+        // Debug::log(ERR, PBUFFER ? "renderSurface: pSurface->screenBuffer null" : "renderSurface: PBUFFER null");
         return;
     }
 
