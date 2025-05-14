@@ -426,17 +426,76 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
 
-            if (!m_bDisableHexPreview) {
+            if (!m_bDisablePreview) {
                 const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
-                std::string hexBuffer;
-                if (m_bUseLowerCase)
-                    hexBuffer = std::format("#{:02x}{:02x}{:02x}", currentColor.r, currentColor.g, currentColor.b);
-                else
-                    hexBuffer = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
+                std::string previewBuffer;
+                auto        fmax3 = [](float a, float b, float c) -> float { return (a > b && a > c) ? a : (b > c) ? b : c; };
+                auto        fmin3 = [](float a, float b, float c) -> float { return (a < b && a < c) ? a : (b < c) ? b : c; };
+                switch (m_bSelectedOutputMode) {
+                    case OUTPUT_HEX: {
+                        if (m_bUseLowerCase)
+                            previewBuffer = std::format("#{:02x}{:02x}{:02x}", currentColor.r, currentColor.g, currentColor.b);
+                        else
+                            previewBuffer = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
+                        break;
+                    };
+                    case OUTPUT_RGB: {
+                        previewBuffer = std::format("{} {} {}", currentColor.r, currentColor.g, currentColor.b);
+                        break;
+                    };
+                    case OUTPUT_HSL:
+                    case OUTPUT_HSV: {
+                        auto floatEq = [](float a, float b) -> bool {
+                            return std::nextafter(a, std::numeric_limits<double>::lowest()) <= b && std::nextafter(a, std::numeric_limits<double>::max()) >= b;
+                        };
 
+                        float h, s, l, v;
+                        float r = currentColor.r / 255.0f, g = currentColor.g / 255.0f, b = currentColor.b / 255.0f;
+                        float max = fmax3(r, g, b), min = fmin3(r, g, b);
+                        float c = max - min;
+
+                        v = max;
+                        if (c == 0)
+                            h = 0;
+                        else if (v == r)
+                            h = 60 * (0 + (g - b) / c);
+                        else if (v == g)
+                            h = 60 * (2 + (b - r) / c);
+                        else /* v == b */
+                            h = 60 * (4 + (r - g) / c);
+
+                        float l_or_v;
+                        if (m_bSelectedOutputMode == OUTPUT_HSL) {
+                            l      = (max + min) / 2;
+                            s      = (floatEq(l, 0.0f) || floatEq(l, 1.0f)) ? 0 : (v - l) / std::min(l, 1 - l);
+                            l_or_v = std::round(l * 100);
+                        } else {
+                            v      = max;
+                            s      = floatEq(v, 0.0f) ? 0 : c / v;
+                            l_or_v = std::round(v * 100);
+                        }
+
+                        h             = std::round(h < 0 ? h + 360 : h);
+                        s             = std::round(s * 100);
+                        previewBuffer = std::format("{} {}% {}%", h, s, l_or_v);
+                        break;
+                    };
+                    case OUTPUT_CMYK: {
+                        float r = 1 - (currentColor.r / 255.0f), g = 1 - (currentColor.g / 255.0f), b = 1 - (currentColor.b / 255.0f);
+                        float k = fmin3(r, g, b), K = (k == 1) ? 1 : 1 - k;
+                        float c = (r - k) / K, m = (g - k) / K, y = (b - k) / K;
+
+                        c             = std::round(c * 100);
+                        m             = std::round(m * 100);
+                        y             = std::round(y * 100);
+                        k             = std::round(k * 100);
+                        previewBuffer = std::format("{}% {}% {}% {}%", c, m, y, k);
+                        break;
+                    };
+                };
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
 
-                double x, y, width = 85, height = 28, radius = 6;
+                double x, y, width = 8 + (11 * previewBuffer.length()), height = 28, radius = 6;
 
                 if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
                     x = CLICKPOS.x - 80;
@@ -451,7 +510,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                     x = CLICKPOS.x;
                     y = CLICKPOS.y + 20;
                 }
-
+                x -= 5.5 * previewBuffer.length();
                 cairo_move_to(PCAIRO, x + radius, y);
                 cairo_arc(PCAIRO, x + width - radius, y + radius, radius, -M_PI_2, 0);
                 cairo_arc(PCAIRO, x + width - radius, y + height - radius, radius, 0, M_PI_2);
@@ -477,7 +536,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 else
                     cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
 
-                cairo_show_text(PCAIRO, hexBuffer.c_str());
+                cairo_show_text(PCAIRO, previewBuffer.c_str());
 
                 cairo_surface_flush(PBUFFER->surface);
             }
