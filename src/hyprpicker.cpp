@@ -429,66 +429,33 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             if (!m_bDisablePreview) {
                 const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
                 std::string previewBuffer;
-                auto        fmax3 = [](float a, float b, float c) -> float { return (a > b && a > c) ? a : (b > c) ? b : c; };
-                auto        fmin3 = [](float a, float b, float c) -> float { return (a < b && a < c) ? a : (b < c) ? b : c; };
                 switch (m_bSelectedOutputMode) {
                     case OUTPUT_HEX: {
+                        previewBuffer = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
                         if (m_bUseLowerCase)
-                            previewBuffer = std::format("#{:02x}{:02x}{:02x}", currentColor.r, currentColor.g, currentColor.b);
-                        else
-                            previewBuffer = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
+                            for (auto& c : previewBuffer)
+                                c = std::tolower(c);
                         break;
                     };
                     case OUTPUT_RGB: {
                         previewBuffer = std::format("{} {} {}", currentColor.r, currentColor.g, currentColor.b);
                         break;
                     };
-                    case OUTPUT_HSL:
+                    case OUTPUT_HSL: {
+                        float h, s, l;
+                        currentColor.getHSL(h, s, l);
+                        previewBuffer = std::format("{} {}% {}%", h, s, l);
+                        break;
+                    };
                     case OUTPUT_HSV: {
-                        auto floatEq = [](float a, float b) -> bool {
-                            return std::nextafter(a, std::numeric_limits<double>::lowest()) <= b && std::nextafter(a, std::numeric_limits<double>::max()) >= b;
-                        };
-
-                        float h, s, l, v;
-                        float r = currentColor.r / 255.0f, g = currentColor.g / 255.0f, b = currentColor.b / 255.0f;
-                        float max = fmax3(r, g, b), min = fmin3(r, g, b);
-                        float c = max - min;
-
-                        v = max;
-                        if (c == 0)
-                            h = 0;
-                        else if (v == r)
-                            h = 60 * (0 + (g - b) / c);
-                        else if (v == g)
-                            h = 60 * (2 + (b - r) / c);
-                        else /* v == b */
-                            h = 60 * (4 + (r - g) / c);
-
-                        float l_or_v;
-                        if (m_bSelectedOutputMode == OUTPUT_HSL) {
-                            l      = (max + min) / 2;
-                            s      = (floatEq(l, 0.0f) || floatEq(l, 1.0f)) ? 0 : (v - l) / std::min(l, 1 - l);
-                            l_or_v = std::round(l * 100);
-                        } else {
-                            v      = max;
-                            s      = floatEq(v, 0.0f) ? 0 : c / v;
-                            l_or_v = std::round(v * 100);
-                        }
-
-                        h             = std::round(h < 0 ? h + 360 : h);
-                        s             = std::round(s * 100);
-                        previewBuffer = std::format("{} {}% {}%", h, s, l_or_v);
+                        float h, s, v;
+                        currentColor.getHSV(h, s, v);
+                        previewBuffer = std::format("{} {}% {}%", h, s, v);
                         break;
                     };
                     case OUTPUT_CMYK: {
-                        float r = 1 - (currentColor.r / 255.0f), g = 1 - (currentColor.g / 255.0f), b = 1 - (currentColor.b / 255.0f);
-                        float k = fmin3(r, g, b), K = (k == 1) ? 1 : 1 - k;
-                        float c = (r - k) / K, m = (g - k) / K, y = (b - k) / K;
-
-                        c             = std::round(c * 100);
-                        m             = std::round(m * 100);
-                        y             = std::round(y * 100);
-                        k             = std::round(k * 100);
+                        float c, m, y, k;
+                        currentColor.getCMYK(c, m, y, k);
                         previewBuffer = std::format("{}% {}% {}% {}%", c, m, y, k);
                         break;
                     };
@@ -674,9 +641,6 @@ void CHyprpicker::initMouse() {
         markDirty();
     });
     m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
-        auto fmax3 = [](float a, float b, float c) -> float { return (a > b && a > c) ? a : (b > c) ? b : c; };
-        auto fmin3 = [](float a, float b, float c) -> float { return (a < b && a < c) ? a : (b < c) ? b : c; };
-
         // relative brightness of a color
         // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
         const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
@@ -693,17 +657,8 @@ void CHyprpicker::initMouse() {
 
         switch (m_bSelectedOutputMode) {
             case OUTPUT_CMYK: {
-                // http://www.codeproject.com/KB/applications/xcmyk.aspx
-
-                float r = 1 - (COL.r / 255.0f), g = 1 - (COL.g / 255.0f), b = 1 - (COL.b / 255.0f);
-                float k = fmin3(r, g, b), K = (k == 1) ? 1 : 1 - k;
-                float c = (r - k) / K, m = (g - k) / K, y = (b - k) / K;
-
-                c = std::round(c * 100);
-                m = std::round(m * 100);
-                y = std::round(y * 100);
-                k = std::round(k * 100);
-
+                float c, m, y, k;
+                COL.getCMYK(c, m, y, k);
                 if (m_bFancyOutput)
                     Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
                 else
@@ -754,41 +709,11 @@ void CHyprpicker::initMouse() {
             }
             case OUTPUT_HSL:
             case OUTPUT_HSV: {
-                // https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
-
-                auto floatEq = [](float a, float b) -> bool {
-                    return std::nextafter(a, std::numeric_limits<double>::lowest()) <= b && std::nextafter(a, std::numeric_limits<double>::max()) >= b;
-                };
-
-                float h, s, l, v;
-                float r = COL.r / 255.0f, g = COL.g / 255.0f, b = COL.b / 255.0f;
-                float max = fmax3(r, g, b), min = fmin3(r, g, b);
-                float c = max - min;
-
-                v = max;
-                if (c == 0)
-                    h = 0;
-                else if (v == r)
-                    h = 60 * (0 + (g - b) / c);
-                else if (v == g)
-                    h = 60 * (2 + (b - r) / c);
-                else /* v == b */
-                    h = 60 * (4 + (r - g) / c);
-
-                float l_or_v;
-                if (m_bSelectedOutputMode == OUTPUT_HSL) {
-                    l      = (max + min) / 2;
-                    s      = (floatEq(l, 0.0f) || floatEq(l, 1.0f)) ? 0 : (v - l) / std::min(l, 1 - l);
-                    l_or_v = std::round(l * 100);
-                } else {
-                    v      = max;
-                    s      = floatEq(v, 0.0f) ? 0 : c / v;
-                    l_or_v = std::round(v * 100);
-                }
-
-                h = std::round(h < 0 ? h + 360 : h);
-                s = std::round(s * 100);
-
+                float h, s, l_or_v;
+                if (m_bSelectedOutputMode == OUTPUT_HSV)
+                    COL.getHSV(h, s, l_or_v);
+                else
+                    COL.getHSL(h, s, l_or_v);
                 if (m_bFancyOutput)
                     Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l_or_v);
                 else
