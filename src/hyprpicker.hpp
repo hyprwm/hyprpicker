@@ -40,12 +40,12 @@ class CHyprpicker {
 
     bool                                        m_bFancyOutput = true;
 
-    bool                                        m_bAutoCopy          = false;
-    bool                                        m_bRenderInactive    = false;
-    bool                                        m_bNoZoom            = false;
-    bool                                        m_bNoFractional      = false;
-    bool                                        m_bDisableHexPreview = false;
-    bool                                        m_bUseLowerCase      = false;
+    bool                                        m_bAutoCopy       = false;
+    bool                                        m_bRenderInactive = false;
+    bool                                        m_bNoZoom         = false;
+    bool                                        m_bNoFractional   = false;
+    bool                                        m_bDisablePreview = false;
+    bool                                        m_bUseLowerCase   = false;
 
     bool                                        m_bRunning = true;
 
