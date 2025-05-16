@@ -571,9 +571,9 @@ void CHyprpicker::initKeyboard() {
 
         if (m_pXKBState) {
             if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Escape)
-                finish();
+                finish(2);
         } else if (key == 1) // Assume keycode 1 is escape
-            finish();
+            finish(2);
     });
 }
 
