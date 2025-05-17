@@ -12,13 +12,13 @@ Launch it. Click. That's it.
 
 See `hyprpicker --help`.
 
-# Building
+# Installation
 
 ## Arch
 
-`yay -S hyprpicker-git`
+`sudo pacman -S hyprpicker`
 
-## Manual
+## Manual (Building)
 
 Install dependencies:
  - cmake
