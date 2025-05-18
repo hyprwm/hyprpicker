@@ -15,7 +15,7 @@ static void help() {
               << " -q | --quiet               | Disable most logs (leaves errors)\n"
               << " -v | --verbose             | Enable more logs\n"
               << " -t | --no-fractional       | Disable fractional scaling support\n"
-              << " -d | --disable-hex-preview | Disable live preview of Hex code\n"
+              << " -d | --disable-preview     | Disable live preview of color\n"
               << " -l | --lowercase-hex       | Outputs the hexcode in lowercase\n"
               << " -V | --version             | Print version info\n";
 }
@@ -34,7 +34,7 @@ int main(int argc, char** argv, char** envp) {
                                                {"no-fractional", no_argument, nullptr, 't'},
                                                {"quiet", no_argument, nullptr, 'q'},
                                                {"verbose", no_argument, nullptr, 'v'},
-                                               {"disable-hex-preview", no_argument, nullptr, 'd'},
+                                               {"disable-preview", no_argument, nullptr, 'd'},
                                                {"lowercase-hex", no_argument, nullptr, 'l'},
                                                {"version", no_argument, nullptr, 'V'},
                                                {nullptr, 0, nullptr, 0}};
@@ -68,7 +68,7 @@ int main(int argc, char** argv, char** envp) {
             case 't': g_pHyprpicker->m_bNoFractional = true; break;
             case 'q': Debug::quiet = true; break;
             case 'v': Debug::verbose = true; break;
-            case 'd': g_pHyprpicker->m_bDisableHexPreview = true; break;
+            case 'd': g_pHyprpicker->m_bDisablePreview = true; break;
             case 'l': g_pHyprpicker->m_bUseLowerCase = true; break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
