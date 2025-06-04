@@ -658,6 +658,19 @@ void CHyprpicker::initMouse() {
         // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
         const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
 
+        auto          toHex = [this](int i) -> std::string {
+            const char* DS = m_bUseLowerCase ? "0123456789abcdef" : "0123456789ABCDEF";
+
+            std::string result = "";
+
+            result += DS[i / 16];
+            result += DS[i % 16];
+
+            return result;
+        };
+
+        std::string hexColor = std::format("#{}{}{}", toHex(COL.r), toHex(COL.g), toHex(COL.b));
+
         switch (m_bSelectedOutputMode) {
             case OUTPUT_CMYK: {
                 float c, m, y, k;
@@ -671,26 +684,15 @@ void CHyprpicker::initMouse() {
                     Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
 
                 if (m_bNotify) {
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "cmyk(%f%%, %f%%, %f%%, %f%%)", c, m, y, k);
-                    Notify::send(buf);
+                    std::string formattedColor = std::format("cmyk({}%, {}%, {}%, {}%)", c, m, y, k);
+
+                    Notify::send(hexColor, formattedColor);
                 }
 
                 finish();
                 break;
             }
             case OUTPUT_HEX: {
-                auto toHex = [this](int i) -> std::string {
-                    const char* DS = m_bUseLowerCase ? "0123456789abcdef" : "0123456789ABCDEF";
-
-                    std::string result = "";
-
-                    result += DS[i / 16];
-                    result += DS[i % 16];
-
-                    return result;
-                };
-
                 auto hexR = toHex(COL.r);
                 auto hexG = toHex(COL.g);
                 auto hexB = toHex(COL.b);
@@ -705,9 +707,7 @@ void CHyprpicker::initMouse() {
                     Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
 
                 if (m_bNotify) {
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
-                    Notify::send(buf);
+                    Notify::send(hexColor, hexColor);
                 }
 
                 finish();
@@ -723,9 +723,9 @@ void CHyprpicker::initMouse() {
                     Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
 
                 if (m_bNotify) {
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "rgb(%i, %i, %i)", COL.r, COL.g, COL.b);
-                    Notify::send(buf);
+                    std::string formattedColor = std::format("rgb({}, {}, {})", COL.r, COL.g, COL.b);
+
+                    Notify::send(hexColor, formattedColor);
                 }
 
                 finish();
@@ -747,9 +747,9 @@ void CHyprpicker::initMouse() {
                     Clipboard::copy("%g %g%% %g%%", h, s, l_or_v);
 
                 if (m_bNotify) {
-                    char buf[64];
-                    snprintf(buf, sizeof(buf), "hsl(%f, %f%%, %f%%)", h, s, l_or_v);
-                    Notify::send(buf);
+                    std::string formattedColor = std::format("hsl({}, {}%, {}%)", h, s, l_or_v);
+
+                    Notify::send(hexColor, formattedColor);
                 }
 
                 finish();
