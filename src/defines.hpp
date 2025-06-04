@@ -5,6 +5,7 @@
 #include "helpers/Monitor.hpp"
 #include "helpers/Color.hpp"
 #include "clipboard/Clipboard.hpp"
+#include "notify/Notify.hpp"
 
 // git stuff
 #ifndef GIT_COMMIT_HASH

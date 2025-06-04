@@ -1,5 +1,8 @@
 #include "hyprpicker.hpp"
+#include "src/notify/Notify.hpp"
 #include <csignal>
+#include <cstdio>
+#include <format>
 
 void sigHandler(int sig) {
     g_pHyprpicker->m_vLayerSurfaces.clear();
@@ -666,6 +669,13 @@ void CHyprpicker::initMouse() {
 
                 if (m_bAutoCopy)
                     Clipboard::copy("%g%% %g%% %g%% %g%%", c, m, y, k);
+
+                if (m_bNotify) {
+                    char buf[64];
+                    snprintf(buf, sizeof(buf), "cmyk(%f%%, %f%%, %f%%, %f%%)", c, m, y, k);
+                    Notify::send(buf);
+                }
+
                 finish();
                 break;
             }
@@ -693,6 +703,13 @@ void CHyprpicker::initMouse() {
 
                 if (m_bAutoCopy)
                     Clipboard::copy("#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+
+                if (m_bNotify) {
+                    char buf[64];
+                    snprintf(buf, sizeof(buf), "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+                    Notify::send(buf);
+                }
+
                 finish();
                 break;
             }
@@ -704,6 +721,13 @@ void CHyprpicker::initMouse() {
 
                 if (m_bAutoCopy)
                     Clipboard::copy("%i %i %i", COL.r, COL.g, COL.b);
+
+                if (m_bNotify) {
+                    char buf[64];
+                    snprintf(buf, sizeof(buf), "rgb(%i, %i, %i)", COL.r, COL.g, COL.b);
+                    Notify::send(buf);
+                }
+
                 finish();
                 break;
             }
@@ -721,6 +745,13 @@ void CHyprpicker::initMouse() {
 
                 if (m_bAutoCopy)
                     Clipboard::copy("%g %g%% %g%%", h, s, l_or_v);
+
+                if (m_bNotify) {
+                    char buf[64];
+                    snprintf(buf, sizeof(buf), "hsl(%f, %f%%, %f%%)", h, s, l_or_v);
+                    Notify::send(buf);
+                }
+
                 finish();
                 break;
             }
