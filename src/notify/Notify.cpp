@@ -4,12 +4,19 @@
 #include <cstdint>
 #include <cstdio>
 #include <format>
+#include <hyprutils/os/Process.hpp>
 #include <iostream>
 #include <string>
 
-void NNotify::send(std::string hexColor, std::string formattedColor) {
-    std::string bodyString = std::format("<span>You selected the color: <span color='{}'><b>{}</b></span></span>", hexColor, formattedColor);
+#include <hyprutils/os/Process.hpp>
 
-    if (fork() == 0)
-        execlp("notify-send", "notify-send", "-t", "5000", "-i", "color-select-symbolic", "Color Picker", bodyString.c_str(), NULL);
+void NNotify::send(std::string hexColor, std::string formattedColor) {
+    std::string              notifyBody = std::format("<span>You selected the color: <span color='{}'><b>{}</b></span></span>", hexColor, formattedColor);
+
+    std::string              notifyBinary = "notify-send";
+    std::vector<std::string> notifyArgs   = {"-t", "5000", "-i", "color-select-symbolic", "Color Picker", notifyBody};
+
+    Hyprutils::OS::CProcess  notify(notifyBinary, notifyArgs);
+
+    notify.runAsync();
 }
