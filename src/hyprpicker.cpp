@@ -464,7 +464,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                         break;
                     };
                 };
-                cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.5);
+                cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.75);
 
                 double x, y, width = 8 + (11 * previewBuffer.length()), height = 28, radius = 6;
 
