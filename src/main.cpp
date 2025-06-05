@@ -29,8 +29,8 @@ int main(int argc, char** argv, char** envp) {
         static struct option long_options[] = {{"autocopy", no_argument, nullptr, 'a'},
                                                {"format", required_argument, nullptr, 'f'},
                                                {"help", no_argument, nullptr, 'h'},
-                                               {"notify", no_argument, nullptr, 'n'},
-                                               {"no-fancy", no_argument, nullptr, 'b'},
+                                               {"no-fancy", no_argument, nullptr, 'n'},
+                                               {"notify", no_argument, nullptr, 'j'},
                                                {"render-inactive", no_argument, nullptr, 'r'},
                                                {"no-zoom", no_argument, nullptr, 'z'},
                                                {"no-fractional", no_argument, nullptr, 't'},
@@ -63,8 +63,9 @@ int main(int argc, char** argv, char** envp) {
                 }
                 break;
             case 'h': help(); exit(0);
-            case 'n': g_pHyprpicker->m_bNotify = true; break;
             case 'b': g_pHyprpicker->m_bFancyOutput = false; break;
+            case 'n': g_pHyprpicker->m_bNotify = true; break;
+            case 'a': g_pHyprpicker->m_bAutoCopy = true; break;
             case 'r': g_pHyprpicker->m_bRenderInactive = true; break;
             case 'z': g_pHyprpicker->m_bNoZoom = true; break;
             case 't': g_pHyprpicker->m_bNoFractional = true; break;
