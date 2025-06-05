@@ -4,6 +4,6 @@
 #include <string>
 #define NOTIFYBODYSIZE 128
 
-namespace Notify {
+namespace NNotify {
     void send(std::string hexColor, std::string formattedColor);
 }

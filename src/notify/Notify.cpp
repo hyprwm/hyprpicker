@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 
-void Notify::send(std::string hexColor, std::string formattedColor) {
+void NNotify::send(std::string hexColor, std::string formattedColor) {
     std::string bodyString = std::format("<span>You selected the color: <span color='{}'><b>{}</b></span></span>", hexColor, formattedColor);
 
     if (fork() == 0)
