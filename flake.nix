@@ -45,7 +45,7 @@
         inputs.hyprwayland-scanner.overlays.default
         (final: prev: {
           hyprpicker = prev.callPackage ./nix/default.nix {
-            stdenv = prev.gcc14Stdenv;
+            stdenv = prev.gcc15Stdenv;
             version = version + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
           };
           hyprpicker-debug = final.hyprpicker.override {debug = true;};
