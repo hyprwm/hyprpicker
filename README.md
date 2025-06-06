@@ -32,7 +32,7 @@ Hyprpicker is designed to *just work* with clipboard copying, format selection, 
 By default, the color is printed to stdout. Combine it with options like clipboard copy or notification for a smoother experience.
 
 ```sh
-hyprpicker -a -n -b -fmt rgb
+hyprpicker -a -n -b -f rgb
 ```
 
 
