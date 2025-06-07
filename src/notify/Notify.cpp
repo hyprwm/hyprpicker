@@ -11,12 +11,9 @@
 #include <hyprutils/os/Process.hpp>
 
 void NNotify::send(std::string hexColor, std::string formattedColor) {
-    std::string              notifyBody = std::format("<span>You selected the color: <span color='{}'><b>{}</b></span></span>", hexColor, formattedColor);
+    std::string             notifyBody = std::format("<span>Selected color: <span color='{}'><b>{}</b></span></span>", hexColor, formattedColor);
 
-    std::string              notifyBinary = "notify-send";
-    std::vector<std::string> notifyArgs   = {"-t", "5000", "-i", "color-select-symbolic", "Color Picker", notifyBody};
-
-    Hyprutils::OS::CProcess  notify(notifyBinary, notifyArgs);
+    Hyprutils::OS::CProcess notify("notify-send", {"-t", "5000", "-i", "color-select-symbolic", "Color Picker", notifyBody});
 
     notify.runAsync();
 }

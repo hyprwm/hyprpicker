@@ -6,11 +6,7 @@
 #include <vector>
 
 void NClipboard::copy(std::string data) {
-    std::string              clipboardBinary = "wl-copy";
-
-    std::vector<std::string> clipboardArgs = {data};
-
-    Hyprutils::OS::CProcess  copy(clipboardBinary, clipboardArgs);
+    Hyprutils::OS::CProcess copy("wl-copy", {data});
 
     copy.runAsync();
 }

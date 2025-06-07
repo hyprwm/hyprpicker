@@ -671,7 +671,7 @@ void CHyprpicker::initMouse() {
             return result;
         };
 
-        std::string hexColor = std::format("#{}{}{}", toHex(COL.r), toHex(COL.g), toHex(COL.b));
+        std::string hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
 
         switch (m_bSelectedOutputMode) {
             case OUTPUT_CMYK: {
@@ -688,9 +688,8 @@ void CHyprpicker::initMouse() {
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
 
-                if (m_bNotify) {
+                if (m_bNotify)
                     NNotify::send(hexColor, formattedColor);
-                }
 
                 finish();
                 break;
@@ -705,9 +704,8 @@ void CHyprpicker::initMouse() {
                 if (m_bAutoCopy)
                     NClipboard::copy(hexColor);
 
-                if (m_bNotify) {
+                if (m_bNotify)
                     NNotify::send(hexColor, hexColor);
-                }
 
                 finish();
                 break;
@@ -723,9 +721,8 @@ void CHyprpicker::initMouse() {
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
 
-                if (m_bNotify) {
+                if (m_bNotify)
                     NNotify::send(hexColor, formattedColor);
-                }
 
                 finish();
                 break;
@@ -748,9 +745,8 @@ void CHyprpicker::initMouse() {
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
 
-                if (m_bNotify) {
+                if (m_bNotify)
                     NNotify::send(hexColor, formattedColor);
-                }
 
                 finish();
                 break;
