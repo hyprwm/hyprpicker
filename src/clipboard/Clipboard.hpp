@@ -1,7 +1,7 @@
 #pragma once
 
-#define CLIPBOARDMESSAGESIZE 24
+#include <string>
 
-namespace Clipboard {
-    void copy(const char* fmt, ...);
+namespace NClipboard {
+    void copy(std::string data);
 };

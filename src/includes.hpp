@@ -35,7 +35,9 @@
 #include <unordered_map>
 
 #include <hyprutils/memory/WeakPtr.hpp>
+#include <hyprutils/os/Process.hpp>
 using namespace Hyprutils::Memory;
+using namespace Hyprutils::OS;
 
 #define SP CSharedPointer
 #define WP CWeakPointer
