@@ -1,20 +1,12 @@
 #include "Clipboard.hpp"
 
 #include "../includes.hpp"
+#include <hyprutils/os/Process.hpp>
+#include <string>
+#include <vector>
 
-void Clipboard::copy(const char* fmt, ...) {
-    char    buf[CLIPBOARDMESSAGESIZE] = "";
-    char*   outputStr;
+void NClipboard::copy(std::string data) {
+    Hyprutils::OS::CProcess copy("wl-copy", {data});
 
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof buf, fmt, args);
-    va_end(args);
-
-    outputStr = strdup(buf);
-
-    if (fork() == 0)
-        execlp("wl-copy", "wl-copy", outputStr, NULL);
-
-    free(outputStr);
+    copy.runAsync();
 }

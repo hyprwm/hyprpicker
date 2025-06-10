@@ -8,7 +8,8 @@ static void help() {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n"
               << " -a | --autocopy            | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
               << " -f | --format=fmt          | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
-              << " -n | --no-fancy            | Disables the \"fancy\" (aka. colored) outputting\n"
+              << " -n | --notify              | Sends a desktop notification when a color is picked (requires notify-send and a notification daemon like dunst)\n"
+              << " -b | --no-fancy            | Disables the \"fancy\" (aka. colored) outputting\n"
               << " -h | --help                | Show this help message\n"
               << " -r | --render-inactive     | Render (freeze) inactive displays\n"
               << " -z | --no-zoom             | Disable the zoom lens\n"
@@ -28,7 +29,8 @@ int main(int argc, char** argv, char** envp) {
         static struct option long_options[] = {{"autocopy", no_argument, nullptr, 'a'},
                                                {"format", required_argument, nullptr, 'f'},
                                                {"help", no_argument, nullptr, 'h'},
-                                               {"no-fancy", no_argument, nullptr, 'n'},
+                                               {"no-fancy", no_argument, nullptr, 'b'},
+                                               {"notify", no_argument, nullptr, 'n'},
                                                {"render-inactive", no_argument, nullptr, 'r'},
                                                {"no-zoom", no_argument, nullptr, 'z'},
                                                {"no-fractional", no_argument, nullptr, 't'},
@@ -39,7 +41,7 @@ int main(int argc, char** argv, char** envp) {
                                                {"version", no_argument, nullptr, 'V'},
                                                {nullptr, 0, nullptr, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnarzqvtdlV", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnbarzqvtdlV", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -61,7 +63,8 @@ int main(int argc, char** argv, char** envp) {
                 }
                 break;
             case 'h': help(); exit(0);
-            case 'n': g_pHyprpicker->m_bFancyOutput = false; break;
+            case 'b': g_pHyprpicker->m_bFancyOutput = false; break;
+            case 'n': g_pHyprpicker->m_bNotify = true; break;
             case 'a': g_pHyprpicker->m_bAutoCopy = true; break;
             case 'r': g_pHyprpicker->m_bRenderInactive = true; break;
             case 'z': g_pHyprpicker->m_bNoZoom = true; break;

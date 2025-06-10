@@ -46,3 +46,4 @@ cmake --install ./build
 # Caveats
 
 "Freezes" your displays when picking the color.
+
