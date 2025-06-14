@@ -56,6 +56,7 @@ class CHyprpicker {
     CLayerSurface*                              m_pLastSurface;
 
     Vector2D                                    m_vLastCoords;
+    bool                                        m_bCoordsInitialized = false;
 
     void                                        renderSurface(CLayerSurface*, bool forceInactive = false);
 

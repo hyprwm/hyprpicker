@@ -364,7 +364,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
     cairo_rectangle(PCAIRO, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
     cairo_fill(PCAIRO);
 
-    if (pSurface == m_pLastSurface && !forceInactive) {
+    if (pSurface == m_pLastSurface && !forceInactive && m_bCoordsInitialized) {
         const auto SCALEBUFS      = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
         const auto MOUSECOORDSABS = m_vLastCoords.floor() / pSurface->m_pMonitor->size;
         const auto CLICKPOS       = MOUSECOORDSABS * PBUFFER->pixelSize;
@@ -514,12 +514,12 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_restore(PCAIRO);
             cairo_pattern_destroy(PATTERN);
         }
-    } else if (!m_bRenderInactive) {
+    } else if (!m_bRenderInactive && m_bCoordsInitialized) {
         cairo_set_operator(PCAIRO, CAIRO_OPERATOR_SOURCE);
         cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
         cairo_rectangle(PCAIRO, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
         cairo_fill(PCAIRO);
-    } else {
+    } else if (m_bCoordsInitialized) {
         const auto SCALEBUFS  = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
         const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
@@ -613,7 +613,8 @@ void CHyprpicker::initMouse() {
         auto x = wl_fixed_to_double(surface_x);
         auto y = wl_fixed_to_double(surface_y);
 
-        m_vLastCoords = {x, y};
+        m_vLastCoords        = {x, y};
+        m_bCoordsInitialized = true;
 
         for (auto& ls : m_vLayerSurfaces) {
             if (ls->pSurface->resource() == surface) {
