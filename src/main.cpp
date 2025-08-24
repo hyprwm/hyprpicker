@@ -18,6 +18,7 @@ static void help() {
               << " -t | --no-fractional       | Disable fractional scaling support\n"
               << " -d | --disable-preview     | Disable live preview of color\n"
               << " -l | --lowercase-hex       | Outputs the hexcode in lowercase\n"
+              << " -p | --print-hovered       | Prints the hovered color to stdout\n"
               << " -V | --version             | Print version info\n";
 }
 
@@ -39,9 +40,10 @@ int main(int argc, char** argv, char** envp) {
                                                {"disable-preview", no_argument, nullptr, 'd'},
                                                {"lowercase-hex", no_argument, nullptr, 'l'},
                                                {"version", no_argument, nullptr, 'V'},
+                                               {"print-hovered", no_argument, nullptr, 'p'},
                                                {nullptr, 0, nullptr, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnbarzqvtdlV", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnbarzqvtdlpV", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -73,6 +75,7 @@ int main(int argc, char** argv, char** envp) {
             case 'v': Debug::verbose = true; break;
             case 'd': g_pHyprpicker->m_bDisablePreview = true; break;
             case 'l': g_pHyprpicker->m_bUseLowerCase = true; break;
+            case 'p': g_pHyprpicker->m_bPrintHovered = true; break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
                 exit(0);

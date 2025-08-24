@@ -644,6 +644,87 @@ void CHyprpicker::initMouse() {
 
         m_vLastCoords = {x, y};
 
+        if (m_bPrintHovered) {
+          // relative brightness of a color
+          // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
+          const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
+
+          // get the px and print it
+          const auto MOUSECOORDSABS = m_vLastCoords.floor() / m_pLastSurface->m_pMonitor->size;
+          const auto CLICKPOS       = MOUSECOORDSABS * m_pLastSurface->screenBuffer->pixelSize;
+
+          const auto COL = getColorFromPixel(m_pLastSurface, CLICKPOS);
+
+          // threshold: (lumi_white + 0.05) / (x + 0.05) == (x + 0.05) / (lumi_black + 0.05)
+          // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
+          const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
+
+          auto          toHex = [this](int i) -> std::string {
+              const char* DS = m_bUseLowerCase ? "0123456789abcdef" : "0123456789ABCDEF";
+
+              std::string result = "";
+
+              result += DS[i / 16];
+              result += DS[i % 16];
+
+              return result;
+          };
+
+          std::string hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
+
+          switch (m_bSelectedOutputMode) {
+              case OUTPUT_CMYK: {
+                  float c, m, y, k;
+                  COL.getCMYK(c, m, y, k);
+
+                  std::string formattedColor = std::format("{}% {}% {}% {}%", c, m, y, k);
+
+                  if (m_bFancyOutput)
+                      Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
+                  else
+                      Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
+
+                  break;
+              }
+              case OUTPUT_HEX: {
+                  if (m_bFancyOutput)
+                      Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im#%s%s%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(),
+                                 toHex(COL.b).c_str());
+                  else
+                      Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+
+                  break;
+              }
+              case OUTPUT_RGB: {
+                  std::string formattedColor = std::format("{} {} {}", COL.r, COL.g, COL.b);
+
+                  if (m_bFancyOutput)
+                      Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%i %i %i\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                  else
+                      Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
+
+                  break;
+              }
+              case OUTPUT_HSL:
+              case OUTPUT_HSV: {
+                  float h, s, l_or_v;
+                  if (m_bSelectedOutputMode == OUTPUT_HSV)
+                      COL.getHSV(h, s, l_or_v);
+                  else
+                      COL.getHSL(h, s, l_or_v);
+
+                  std::string formattedColor = std::format("{} {}% {}%", h, s, l_or_v);
+
+                  if (m_bFancyOutput)
+                      Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l_or_v);
+                  else
+                      Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
+
+                  break;
+              }
+          }
+        }
+
         markDirty();
     });
     m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
