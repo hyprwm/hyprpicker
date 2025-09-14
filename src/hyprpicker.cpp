@@ -406,7 +406,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
             cairo_scale(PCAIRO, 1, 1);
 
-            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, 105 / SCALEBUFS.x, 0, 2 * M_PI);
+            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, m_iCircleRadius + 5 / SCALEBUFS.x, 0, 2 * M_PI);
             cairo_clip(PCAIRO);
 
             cairo_fill(PCAIRO);
@@ -426,7 +426,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_matrix_translate(&matrix, (-CLICKPOSBUF.x / SCALEBUFS.x) - 0.5f, (-CLICKPOSBUF.y / SCALEBUFS.y) - 0.5f);
             cairo_pattern_set_matrix(PATTERN, &matrix);
             cairo_set_source(PCAIRO, PATTERN);
-            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, 100 / SCALEBUFS.x, 0, 2 * M_PI);
+            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, m_iCircleRadius / SCALEBUFS.x, 0, 2 * M_PI);
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
 
