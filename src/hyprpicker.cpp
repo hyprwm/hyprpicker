@@ -763,11 +763,10 @@ void CHyprpicker::initMouse() {
 
         double delta = wl_fixed_to_double(value);
 
-        if (delta < 0) {
+        if (delta < 0)
             m_fZoomScale = std::min(m_fZoomScale + 1.0, 100.0);
-        } else {
+        else
             m_fZoomScale = std::max(m_fZoomScale - 1.0, 1.0);
-        }
 
         markDirty();
     });

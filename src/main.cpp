@@ -77,22 +77,46 @@ int main(int argc, char** argv, char** envp) {
             case 'v': Debug::verbose = true; break;
             case 'd': g_pHyprpicker->m_bDisablePreview = true; break;
             case 'l': g_pHyprpicker->m_bUseLowerCase = true; break;
-            case 's': g_pHyprpicker->m_fZoomScale = std::stof(optarg); break;
-            case 'u': g_pHyprpicker->m_iCircleRadius = std::stoi(optarg); break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
                 exit(0);
             }
-            default: help(); exit(1);
-        }
+            case 's': {
+                float value;
+                auto  result = std::from_chars(optarg, optarg + strlen(optarg), value);
 
-        if (g_pHyprpicker->m_fZoomScale < 1.0f || g_pHyprpicker->m_fZoomScale > 10.0f) {
-            std::cerr << "Scale must be between 1 and 10!\n";
-            exit(1);
-        }
-        if (g_pHyprpicker->m_iCircleRadius < 1 || g_pHyprpicker->m_iCircleRadius > 1000) {
-            std::cerr << "Radius must be between 1 and 1000!\n";
-            exit(1);
+                if (result.ec != std::errc() || result.ptr != optarg + strlen(optarg)) {
+                    std::cerr << "Invalid scale value: " << optarg << "\n";
+                    exit(1);
+                }
+
+                if (value < 1.0f || value > 10.0f) {
+                    std::cerr << "Scale must be between 1 and 10!\n";
+                    exit(1);
+                }
+
+                g_pHyprpicker->m_fZoomScale = value;
+                break;
+            }
+
+            case 'u': {
+                int  value;
+                auto result = std::from_chars(optarg, optarg + strlen(optarg), value);
+
+                if (result.ec != std::errc() || result.ptr != optarg + strlen(optarg)) {
+                    std::cerr << "Invalid radius value: " << optarg << "\n";
+                    exit(1);
+                }
+
+                if (value < 1 || value > 1000) {
+                    std::cerr << "Radius must be between 1 and 1000!\n";
+                    exit(1);
+                }
+
+                g_pHyprpicker->m_iCircleRadius = value;
+                break;
+            }
+            default: help(); exit(1);
         }
     }
 
