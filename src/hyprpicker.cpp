@@ -422,7 +422,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_matrix_t matrix;
             cairo_matrix_init_identity(&matrix);
             cairo_matrix_translate(&matrix, CLICKPOSBUF.x + 0.5f, CLICKPOSBUF.y + 0.5f);
-            cairo_matrix_scale(&matrix, 0.1f, 0.1f);
+            cairo_matrix_scale(&matrix, 1.0 / m_fZoomScale, 1.0 / m_fZoomScale);
             cairo_matrix_translate(&matrix, (-CLICKPOSBUF.x / SCALEBUFS.x) - 0.5f, (-CLICKPOSBUF.y / SCALEBUFS.y) - 0.5f);
             cairo_pattern_set_matrix(PATTERN, &matrix);
             cairo_set_source(PCAIRO, PATTERN);
@@ -755,5 +755,20 @@ void CHyprpicker::initMouse() {
         }
 
         finish();
+    });
+
+    m_pPointer->setAxis([this](CCWlPointer* r, uint32_t time, uint32_t axis, wl_fixed_t value) {
+        if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
+            return;
+
+        double delta = wl_fixed_to_double(value);
+
+        if (delta < 0) {
+            m_fZoomScale = std::min(m_fZoomScale + 1.0, 100.0);
+        } else {
+            m_fZoomScale = std::max(m_fZoomScale - 1.0, 1.0);
+        }
+
+        markDirty();
     });
 }
