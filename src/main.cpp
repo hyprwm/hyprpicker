@@ -18,6 +18,8 @@ static void help() {
               << " -t | --no-fractional       | Disable fractional scaling support\n"
               << " -d | --disable-preview     | Disable live preview of color\n"
               << " -l | --lowercase-hex       | Outputs the hexcode in lowercase\n"
+              << " -s | --scale=scale         | Set the zoom scale (between 1 and 10)\n"
+              << " -u | --radius=radius       | Set the circle radius (between 1 and 1000)\n"
               << " -V | --version             | Print version info\n";
 }
 
@@ -39,9 +41,11 @@ int main(int argc, char** argv, char** envp) {
                                                {"disable-preview", no_argument, nullptr, 'd'},
                                                {"lowercase-hex", no_argument, nullptr, 'l'},
                                                {"version", no_argument, nullptr, 'V'},
+                                               {"scale", required_argument, nullptr, 's'},
+                                               {"radius", required_argument, nullptr, 'u'},
                                                {nullptr, 0, nullptr, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnbarzqvtdlV", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnbarzqvtdlVs:u:", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -77,7 +81,41 @@ int main(int argc, char** argv, char** envp) {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";
                 exit(0);
             }
+            case 's': {
+                float value;
+                auto  result = std::from_chars(optarg, optarg + strlen(optarg), value);
 
+                if (result.ec != std::errc() || result.ptr != optarg + strlen(optarg)) {
+                    std::cerr << "Invalid scale value: " << optarg << "\n";
+                    exit(1);
+                }
+
+                if (value < 1.0f || value > 10.0f) {
+                    std::cerr << "Scale must be between 1 and 10!\n";
+                    exit(1);
+                }
+
+                g_pHyprpicker->m_fZoomScale = value;
+                break;
+            }
+
+            case 'u': {
+                int  value;
+                auto result = std::from_chars(optarg, optarg + strlen(optarg), value);
+
+                if (result.ec != std::errc() || result.ptr != optarg + strlen(optarg)) {
+                    std::cerr << "Invalid radius value: " << optarg << "\n";
+                    exit(1);
+                }
+
+                if (value < 1 || value > 1000) {
+                    std::cerr << "Radius must be between 1 and 1000!\n";
+                    exit(1);
+                }
+
+                g_pHyprpicker->m_iCircleRadius = value;
+                break;
+            }
             default: help(); exit(1);
         }
     }
