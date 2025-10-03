@@ -8,6 +8,7 @@ static void help() {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n"
               << " -a | --autocopy            | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
               << " -f | --format=fmt          | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
+              << " -c | --css                 | Output the color in CSS color function syntax\n"
               << " -n | --notify              | Sends a desktop notification when a color is picked (requires notify-send and a notification daemon like dunst)\n"
               << " -b | --no-fancy            | Disables the \"fancy\" (aka. colored) outputting\n"
               << " -h | --help                | Show this help message\n"
@@ -29,6 +30,7 @@ int main(int argc, char** argv, char** envp) {
     while (true) {
         int                  option_index   = 0;
         static struct option long_options[] = {{"autocopy", no_argument, nullptr, 'a'},
+                                               {"css", required_argument, nullptr, 'c'},
                                                {"format", required_argument, nullptr, 'f'},
                                                {"help", no_argument, nullptr, 'h'},
                                                {"no-fancy", no_argument, nullptr, 'b'},
@@ -45,7 +47,7 @@ int main(int argc, char** argv, char** envp) {
                                                {"radius", required_argument, nullptr, 'u'},
                                                {nullptr, 0, nullptr, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:hnbarzqvtdlVs:u:", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:hnbacrzqvtdlVs:u:", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -68,6 +70,7 @@ int main(int argc, char** argv, char** envp) {
                 break;
             case 'h': help(); exit(0);
             case 'b': g_pHyprpicker->m_bFancyOutput = false; break;
+            case 'c': g_pHyprpicker->m_bCssOutput = true; break;
             case 'n': g_pHyprpicker->m_bNotify = true; break;
             case 'a': g_pHyprpicker->m_bAutoCopy = true; break;
             case 'r': g_pHyprpicker->m_bRenderInactive = true; break;

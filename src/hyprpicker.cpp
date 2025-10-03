@@ -672,6 +672,7 @@ void CHyprpicker::initMouse() {
             return result;
         };
 
+        std::string formattedColor;
         std::string hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
 
         switch (m_bSelectedOutputMode) {
@@ -679,12 +680,22 @@ void CHyprpicker::initMouse() {
                 float c, m, y, k;
                 COL.getCMYK(c, m, y, k);
 
-                std::string formattedColor = std::format("{}% {}% {}% {}%", c, m, y, k);
-
-                if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
+                if (m_bCssOutput)
+                    formattedColor = std::format("cmyk({}%, {}%, {}%, {}%)", c, m, y, k);
                 else
-                    Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
+                    formattedColor = std::format("{}% {}% {}% {}%", c, m, y, k);
+
+                if (m_bFancyOutput) {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%imcmyk(%g%%, %g%%, %g%%, %g%%)\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
+                    else
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
+                } else {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "cmyk(%g%%, %g%%, %g%%, %g%%)", c, m, y, k);
+                    else
+                        Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
+                }
 
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
@@ -712,12 +723,22 @@ void CHyprpicker::initMouse() {
                 break;
             }
             case OUTPUT_RGB: {
-                std::string formattedColor = std::format("{} {} {}", COL.r, COL.g, COL.b);
-
-                if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%i %i %i\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                if (m_bCssOutput)
+                    formattedColor = std::format("rgb({}, {}, {})", COL.r, COL.g, COL.b);
                 else
-                    Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
+                    formattedColor = std::format("{} {} {}", COL.r, COL.g, COL.b);
+
+                if (m_bFancyOutput) {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%imrgb(%i, %i, %i)\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                    else
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%i %i %i\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                } else {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "rgb(%i, %i, %i)", COL.r, COL.g, COL.b);
+                    else
+                        Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
+                }
 
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
@@ -729,19 +750,45 @@ void CHyprpicker::initMouse() {
                 break;
             }
             case OUTPUT_HSL:
+                float h, s, l;
+                COL.getHSL(h, s, l);
+
+                if (m_bCssOutput)
+                    formattedColor = std::format("hsl({}, {}%, {}%)", h, s, l);
+                else
+                    formattedColor = std::format("{} {}% {}%", h, s, l);
+
+                if (m_bFancyOutput) {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%imhsl(%g, %g%%, %g%%)\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l);
+                    else
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l);
+                } else {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "hsl(%g, %g%%, %g%%)", h, s, l);
+                    else
+                        Debug::log(NONE, "%g %g%% %g%%", h, s, l);
+                }
+                break;
             case OUTPUT_HSV: {
-                float h, s, l_or_v;
-                if (m_bSelectedOutputMode == OUTPUT_HSV)
-                    COL.getHSV(h, s, l_or_v);
+                float h, s, v;
+                COL.getHSV(h, s, v);
+                if (m_bCssOutput)
+                    formattedColor = std::format("hsv({}, {}%, {}%)", h, s, v);
                 else
-                    COL.getHSL(h, s, l_or_v);
+                    formattedColor = std::format("{} {}% {}%", h, s, v);
 
-                std::string formattedColor = std::format("{} {}% {}%", h, s, l_or_v);
-
-                if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l_or_v);
-                else
-                    Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
+                if (m_bFancyOutput) {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%imhsv(%g, %g%%, %g%%)\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, v);
+                    else
+                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, v);
+                } else {
+                    if (m_bCssOutput)
+                        Debug::log(NONE, "hsv(%g, %g%%, %g%%)", h, s, v);
+                    else
+                        Debug::log(NONE, "%g %g%% %g%%", h, s, v);
+                }
 
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);

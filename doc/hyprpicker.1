@@ -51,6 +51,8 @@ The available options are:
 .Pp
 The default format is
 .Ar hex .
+.It Fl c , Fl Fl css
+Output the color in CSS color function syntax
 .It Fl n , Fl Fl no-fancy
 Disable colored output.
 Default behavior is to color the output in the same color as the selected pixel.
@@ -73,7 +75,7 @@ Get a pixels color in HSL, wrapped in a CSS
 .Fn hsl
 function:
 .Pp
-.Dl $ hyprpicker -f hsl | sed 's/^/hsl(/; s/$/)/; y/ /,/'
+.Dl $ hyprpicker -cf hsl
 .Sh SEE ALSO
 .Xr hyprctl 1 ,
 .Xr hyprland 1 ,
