@@ -759,6 +759,14 @@ void CHyprpicker::initMouse() {
                     else
                         Debug::log(NONE, "%g %g%% %g%%", h, s, l);
                 }
+
+                if (m_bAutoCopy)
+                    NClipboard::copy(formattedColor);
+
+                if (m_bNotify)
+                    NNotify::send(hexColor, formattedColor);
+
+                finish();
                 break;
             case OUTPUT_HSV: {
                 float h, s, v;
