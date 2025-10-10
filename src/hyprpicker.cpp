@@ -680,22 +680,12 @@ void CHyprpicker::initMouse() {
                 float c, m, y, k;
                 COL.getCMYK(c, m, y, k);
 
-                if (m_bCssOutput)
-                    formattedColor = std::format("cmyk({}%, {}%, {}%, {}%)", c, m, y, k);
-                else
-                    formattedColor = std::format("{}% {}% {}% {}%", c, m, y, k);
+                formattedColor = std::format("{}% {}% {}% {}%", c, m, y, k);
 
-                if (m_bFancyOutput) {
-                    if (m_bCssOutput)
-                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%imcmyk(%g%%, %g%%, %g%%, %g%%)\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
-                    else
-                        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
-                } else {
-                    if (m_bCssOutput)
-                        Debug::log(NONE, "cmyk(%g%%, %g%%, %g%%, %g%%)", c, m, y, k);
-                    else
-                        Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
-                }
+                if (m_bFancyOutput)
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
+                else
+                    Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
 
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
