@@ -141,24 +141,7 @@ int main(int argc, char** argv, char** envp) {
     }
     try {
         std::array<uint8_t, 4> dummy = {0, 0, 0, 0};
-        switch (numOutputValues[g_pHyprpicker->m_bSelectedOutputMode]) {
-            case 1: {
-                (void)std::vformat(g_pHyprpicker->m_sOutputFormat, std::make_format_args(dummy[0]));
-                break;
-            }
-            case 2: {
-                (void)std::vformat(g_pHyprpicker->m_sOutputFormat, std::make_format_args(dummy[0], dummy[1]));
-                break;
-            }
-            case 3: {
-                (void)std::vformat(g_pHyprpicker->m_sOutputFormat, std::make_format_args(dummy[0], dummy[1], dummy[2]));
-                break;
-            }
-            case 4: {
-                (void)std::vformat(g_pHyprpicker->m_sOutputFormat, std::make_format_args(dummy[0], dummy[1], dummy[2], dummy[3]));
-                break;
-            }
-        }
+        (void)std::vformat(g_pHyprpicker->m_sOutputFormat, std::make_format_args(dummy[0], dummy[1], dummy[2], dummy[3]));
     } catch (const std::format_error& e) {
         Debug::log(NONE, "%s", e.what());
         exit(1);
