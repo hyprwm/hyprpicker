@@ -435,32 +435,39 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 std::string previewBuffer;
                 switch (m_bSelectedOutputMode) {
                     case OUTPUT_HEX: {
-                        previewBuffer = std::format("#{:02X}{:02X}{:02X}", currentColor.r, currentColor.g, currentColor.b);
-                        if (m_bUseLowerCase)
-                            for (auto& c : previewBuffer)
-                                c = std::tolower(c);
+                        std::string rHex, gHex, bHex;
+                        if (m_bUseLowerCase) {
+                            rHex = std::format("{:02x}", currentColor.r);
+                            gHex = std::format("{:02x}", currentColor.g);
+                            bHex = std::format("{:02x}", currentColor.b);
+                        } else {
+                            rHex = std::format("{:02X}", currentColor.r);
+                            gHex = std::format("{:02X}", currentColor.g);
+                            bHex = std::format("{:02X}", currentColor.b);
+                        }
+                        previewBuffer = std::vformat(m_sOutputFormat, std::make_format_args(rHex, gHex, bHex));
                         break;
                     };
                     case OUTPUT_RGB: {
-                        previewBuffer = std::format("{} {} {}", currentColor.r, currentColor.g, currentColor.b);
+                        previewBuffer = std::vformat(m_sOutputFormat, std::make_format_args(currentColor.r, currentColor.g, currentColor.b));
                         break;
                     };
                     case OUTPUT_HSL: {
                         float h, s, l;
                         currentColor.getHSL(h, s, l);
-                        previewBuffer = std::format("{} {}% {}%", h, s, l);
+                        previewBuffer = std::vformat(m_sOutputFormat, std::make_format_args(h, s, l));
                         break;
                     };
                     case OUTPUT_HSV: {
                         float h, s, v;
                         currentColor.getHSV(h, s, v);
-                        previewBuffer = std::format("{} {}% {}%", h, s, v);
+                        previewBuffer = std::vformat(m_sOutputFormat, std::make_format_args(h, s, v));
                         break;
                     };
                     case OUTPUT_CMYK: {
                         float c, m, y, k;
                         currentColor.getCMYK(c, m, y, k);
-                        previewBuffer = std::format("{}% {}% {}% {}%", c, m, y, k);
+                        previewBuffer = std::vformat(m_sOutputFormat, std::make_format_args(c, m, y, k));
                         break;
                     };
                 };
@@ -661,30 +668,19 @@ void CHyprpicker::initMouse() {
         // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
         const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
 
-        auto          toHex = [this](int i) -> std::string {
-            const char* DS = m_bUseLowerCase ? "0123456789abcdef" : "0123456789ABCDEF";
-
-            std::string result = "";
-
-            result += DS[i / 16];
-            result += DS[i % 16];
-
-            return result;
-        };
-
-        std::string hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
+        std::string   hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
 
         switch (m_bSelectedOutputMode) {
             case OUTPUT_CMYK: {
                 float c, m, y, k;
                 COL.getCMYK(c, m, y, k);
 
-                std::string formattedColor = std::format("{}% {}% {}% {}%", c, m, y, k);
+                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(c, m, y, k));
 
                 if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g%% %g%% %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, c, m, y, k);
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
                 else
-                    Debug::log(NONE, "%g%% %g%% %g%% %g%%", c, m, y, k);
+                    Debug::log(NONE, formattedColor.c_str());
 
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
@@ -696,11 +692,21 @@ void CHyprpicker::initMouse() {
                 break;
             }
             case OUTPUT_HEX: {
+                std::string rHex, gHex, bHex;
+                if (m_bUseLowerCase) {
+                    rHex = std::format("{:02x}", COL.r);
+                    gHex = std::format("{:02x}", COL.g);
+                    bHex = std::format("{:02x}", COL.b);
+                } else {
+                    rHex = std::format("{:02X}", COL.r);
+                    gHex = std::format("{:02X}", COL.g);
+                    bHex = std::format("{:02X}", COL.b);
+                }
+                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(rHex, gHex, bHex));
                 if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im#%s%s%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, toHex(COL.r).c_str(), toHex(COL.g).c_str(),
-                               toHex(COL.b).c_str());
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
                 else
-                    Debug::log(NONE, "#%s%s%s", toHex(COL.r).c_str(), toHex(COL.g).c_str(), toHex(COL.b).c_str());
+                    Debug::log(NONE, formattedColor.c_str());
 
                 if (m_bAutoCopy)
                     NClipboard::copy(hexColor);
@@ -712,12 +718,12 @@ void CHyprpicker::initMouse() {
                 break;
             }
             case OUTPUT_RGB: {
-                std::string formattedColor = std::format("{} {} {}", COL.r, COL.g, COL.b);
+                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(COL.r, COL.g, COL.b));
 
                 if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%i %i %i\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, COL.r, COL.g, COL.b);
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
                 else
-                    Debug::log(NONE, "%i %i %i", COL.r, COL.g, COL.b);
+                    Debug::log(NONE, formattedColor.c_str());
 
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);
@@ -736,12 +742,11 @@ void CHyprpicker::initMouse() {
                 else
                     COL.getHSL(h, s, l_or_v);
 
-                std::string formattedColor = std::format("{} {}% {}%", h, s, l_or_v);
-
+                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(h, s, l_or_v));
                 if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%g %g%% %g%%\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, h, s, l_or_v);
+                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
                 else
-                    Debug::log(NONE, "%g %g%% %g%%", h, s, l_or_v);
+                    Debug::log(NONE, formattedColor.c_str());
 
                 if (m_bAutoCopy)
                     NClipboard::copy(formattedColor);

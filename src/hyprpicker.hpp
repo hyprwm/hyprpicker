@@ -4,13 +4,16 @@
 #include "helpers/LayerSurface.hpp"
 #include "helpers/PoolBuffer.hpp"
 
-enum eOutputMode {
+// OUTPUT_COUNT is being used to count the number of output formats, it should always be last in the enum
+enum eOutputMode : uint8_t {
     OUTPUT_CMYK = 0,
     OUTPUT_HEX,
     OUTPUT_RGB,
     OUTPUT_HSL,
-    OUTPUT_HSV
+    OUTPUT_HSV,
 };
+
+const std::array<uint8_t, 5> numOutputValues = {4, 3, 3, 3, 3};
 
 class CHyprpicker {
   public:
@@ -37,6 +40,7 @@ class CHyprpicker {
     xkb_state*                                  m_pXKBState   = nullptr;
 
     eOutputMode                                 m_bSelectedOutputMode = OUTPUT_HEX;
+    std::string                                 m_sOutputFormat       = "";
 
     bool                                        m_bFancyOutput = true;
 
