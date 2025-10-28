@@ -162,6 +162,116 @@ void CHyprpicker::finish(int code) {
     exit(code);
 }
 
+void CHyprpicker::outputColor() {
+
+    // relative brightness of a color
+    // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
+    const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
+
+    // get the px and print it
+    const auto MOUSECOORDSABS = m_vLastCoords.floor() / m_pLastSurface->m_pMonitor->size;
+    const auto CLICKPOS       = MOUSECOORDSABS * m_pLastSurface->screenBuffer->pixelSize;
+
+    const auto COL = getColorFromPixel(m_pLastSurface, CLICKPOS);
+
+    // threshold: (lumi_white + 0.05) / (x + 0.05) == (x + 0.05) / (lumi_black + 0.05)
+    // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
+    const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
+
+    std::string   hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
+
+    switch (m_bSelectedOutputMode) {
+        case OUTPUT_CMYK: {
+            float c, m, y, k;
+            COL.getCMYK(c, m, y, k);
+
+            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(c, m, y, k));
+
+            if (m_bFancyOutput)
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
+            else
+                Debug::log(NONE, formattedColor.c_str());
+
+            if (m_bAutoCopy)
+                NClipboard::copy(formattedColor);
+
+            if (m_bNotify)
+                NNotify::send(hexColor, formattedColor);
+
+            finish();
+            break;
+        }
+        case OUTPUT_HEX: {
+            std::string rHex, gHex, bHex;
+            if (m_bUseLowerCase) {
+                rHex = std::format("{:02x}", COL.r);
+                gHex = std::format("{:02x}", COL.g);
+                bHex = std::format("{:02x}", COL.b);
+            } else {
+                rHex = std::format("{:02X}", COL.r);
+                gHex = std::format("{:02X}", COL.g);
+                bHex = std::format("{:02X}", COL.b);
+            }
+            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(rHex, gHex, bHex));
+            if (m_bFancyOutput)
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
+            else
+                Debug::log(NONE, formattedColor.c_str());
+
+            if (m_bAutoCopy)
+                NClipboard::copy(hexColor);
+
+            if (m_bNotify)
+                NNotify::send(hexColor, hexColor);
+
+            finish();
+            break;
+        }
+        case OUTPUT_RGB: {
+            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(COL.r, COL.g, COL.b));
+
+            if (m_bFancyOutput)
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
+            else
+                Debug::log(NONE, formattedColor.c_str());
+
+            if (m_bAutoCopy)
+                NClipboard::copy(formattedColor);
+
+            if (m_bNotify)
+                NNotify::send(hexColor, formattedColor);
+
+            finish();
+            break;
+        }
+        case OUTPUT_HSL:
+        case OUTPUT_HSV: {
+            float h, s, l_or_v;
+            if (m_bSelectedOutputMode == OUTPUT_HSV)
+                COL.getHSV(h, s, l_or_v);
+            else
+                COL.getHSL(h, s, l_or_v);
+
+            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(h, s, l_or_v));
+            if (m_bFancyOutput)
+                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
+            else
+                Debug::log(NONE, formattedColor.c_str());
+
+            if (m_bAutoCopy)
+                NClipboard::copy(formattedColor);
+
+            if (m_bNotify)
+                NNotify::send(hexColor, formattedColor);
+
+            finish();
+            break;
+        }
+    }
+
+    finish();
+}
+
 void CHyprpicker::recheckACK() {
     for (auto& ls : m_vLayerSurfaces) {
         if ((ls->wantsACK || ls->wantsReload) && ls->screenBuffer) {
@@ -629,6 +739,8 @@ void CHyprpicker::initKeyboard() {
                 --newPosition.y;
             else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Down)
                 ++newPosition.y;
+            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Return)
+                outputColor();
             else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Escape)
                 finish(2);
             if (inMonitors(m_vMonitors, newPosition))
@@ -676,115 +788,7 @@ void CHyprpicker::initMouse() {
 
         markDirty();
     });
-    m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
-        // relative brightness of a color
-        // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
-        const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
-
-        // get the px and print it
-        const auto MOUSECOORDSABS = m_vLastCoords.floor() / m_pLastSurface->m_pMonitor->size;
-        const auto CLICKPOS       = MOUSECOORDSABS * m_pLastSurface->screenBuffer->pixelSize;
-
-        const auto COL = getColorFromPixel(m_pLastSurface, CLICKPOS);
-
-        // threshold: (lumi_white + 0.05) / (x + 0.05) == (x + 0.05) / (lumi_black + 0.05)
-        // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
-        const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
-
-        std::string   hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
-
-        switch (m_bSelectedOutputMode) {
-            case OUTPUT_CMYK: {
-                float c, m, y, k;
-                COL.getCMYK(c, m, y, k);
-
-                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(c, m, y, k));
-
-                if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-                else
-                    Debug::log(NONE, formattedColor.c_str());
-
-                if (m_bAutoCopy)
-                    NClipboard::copy(formattedColor);
-
-                if (m_bNotify)
-                    NNotify::send(hexColor, formattedColor);
-
-                finish();
-                break;
-            }
-            case OUTPUT_HEX: {
-                std::string rHex, gHex, bHex;
-                if (m_bUseLowerCase) {
-                    rHex = std::format("{:02x}", COL.r);
-                    gHex = std::format("{:02x}", COL.g);
-                    bHex = std::format("{:02x}", COL.b);
-                } else {
-                    rHex = std::format("{:02X}", COL.r);
-                    gHex = std::format("{:02X}", COL.g);
-                    bHex = std::format("{:02X}", COL.b);
-                }
-                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(rHex, gHex, bHex));
-                if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-                else
-                    Debug::log(NONE, formattedColor.c_str());
-
-                if (m_bAutoCopy)
-                    NClipboard::copy(hexColor);
-
-                if (m_bNotify)
-                    NNotify::send(hexColor, hexColor);
-
-                finish();
-                break;
-            }
-            case OUTPUT_RGB: {
-                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(COL.r, COL.g, COL.b));
-
-                if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-                else
-                    Debug::log(NONE, formattedColor.c_str());
-
-                if (m_bAutoCopy)
-                    NClipboard::copy(formattedColor);
-
-                if (m_bNotify)
-                    NNotify::send(hexColor, formattedColor);
-
-                finish();
-                break;
-            }
-            case OUTPUT_HSL:
-            case OUTPUT_HSV: {
-                float h, s, l_or_v;
-                if (m_bSelectedOutputMode == OUTPUT_HSV)
-                    COL.getHSV(h, s, l_or_v);
-                else
-                    COL.getHSL(h, s, l_or_v);
-
-                std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(h, s, l_or_v));
-                if (m_bFancyOutput)
-                    Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-                else
-                    Debug::log(NONE, formattedColor.c_str());
-
-                if (m_bAutoCopy)
-                    NClipboard::copy(formattedColor);
-
-                if (m_bNotify)
-                    NNotify::send(hexColor, formattedColor);
-
-                finish();
-                break;
-            }
-        }
-
-        finish();
-    });
-
+    m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) { outputColor(); });
     m_pPointer->setAxis([this](CCWlPointer* r, uint32_t time, uint32_t axis, wl_fixed_t value) {
         if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
             return;
