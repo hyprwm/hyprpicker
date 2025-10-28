@@ -1,19 +1,32 @@
 #include "hyprpicker.hpp"
+#include "src/debug/Log.hpp"
 #include "src/notify/Notify.hpp"
 #include <csignal>
 #include <cstddef>
 #include <cstdio>
 #include <format>
+#include <hyprutils/math/Vector2D.hpp>
+#include <wayland-client-protocol.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
+#include <xkbcommon/xkbcommon.h>
 
 static void sigHandler(int sig) {
     g_pHyprpicker->m_vLayerSurfaces.clear();
     exit(0);
 }
 
+static bool inMonitors(const std::vector<std::unique_ptr<SMonitor>>& monitors, const Vector2D& pos) {
+    for (const auto& m : monitors) {
+        if ((pos.x >= m->position.x) && (pos.x <= m->position.x + m->size.x) && (pos.y >= m->position.y) && (pos.y <= m->position.y + m->size.y))
+            return true;
+    }
+    return false;
+}
+
 void CHyprpicker::init() {
     m_pXKBContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     if (!m_pXKBContext)
-        Debug::log(ERR, "Failed to create xkb context");
+        Debug::log(ERR, "Failed to create xkb context, keyboard movement not supported");
 
     m_pWLDisplay = wl_display_connect(nullptr);
 
@@ -606,10 +619,20 @@ void CHyprpicker::initKeyboard() {
     m_pKeyboard->setKey([this](CCWlKeyboard* r, uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
         if (state != WL_KEYBOARD_KEY_STATE_PRESSED)
             return;
-
         if (m_pXKBState) {
-            if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Escape)
+            Vector2D newPosition = m_vLastCoords;
+            if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Right)
+                ++newPosition.x;
+            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Left)
+                --newPosition.x;
+            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Up)
+                --newPosition.y;
+            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Down)
+                ++newPosition.y;
+            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Escape)
                 finish(2);
+            if (inMonitors(m_vMonitors, newPosition))
+                m_vLastCoords = newPosition;
         } else if (key == 1) // Assume keycode 1 is escape
             finish(2);
     });
