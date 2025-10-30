@@ -15,14 +15,6 @@ static void sigHandler(int sig) {
     exit(0);
 }
 
-static bool inMonitors(const std::vector<std::unique_ptr<SMonitor>>& monitors, const Vector2D& pos) {
-    for (const auto& m : monitors) {
-        if ((pos.x >= m->position.x) && (pos.x <= m->position.x + m->size.x) && (pos.y >= m->position.y) && (pos.y <= m->position.y + m->size.y))
-            return true;
-    }
-    return false;
-}
-
 void CHyprpicker::init() {
     m_pXKBContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     if (!m_pXKBContext)
@@ -730,21 +722,18 @@ void CHyprpicker::initKeyboard() {
         if (state != WL_KEYBOARD_KEY_STATE_PRESSED)
             return;
         if (m_pXKBState) {
-            Vector2D newPosition = m_vLastCoords;
             if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Right)
-                ++newPosition.x;
+                m_vLastCoords.x += m_vLastCoords.x < m_pLastSurface->m_pMonitor->size.x;
             else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Left)
-                --newPosition.x;
+                m_vLastCoords.x -= m_vLastCoords.x > 0;
             else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Up)
-                --newPosition.y;
+                m_vLastCoords.y -= m_vLastCoords.y > 0;
             else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Down)
-                ++newPosition.y;
+                m_vLastCoords.y += m_vLastCoords.y < m_pLastSurface->m_pMonitor->size.y;
             else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Return)
                 outputColor();
             else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Escape)
                 finish(2);
-            if (inMonitors(m_vMonitors, newPosition))
-                m_vLastCoords = newPosition;
         } else if (key == 1) // Assume keycode 1 is escape
             finish(2);
     });

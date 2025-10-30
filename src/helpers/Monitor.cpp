@@ -5,9 +5,7 @@
 SMonitor::SMonitor(SP<CCWlOutput> output_) : output(output_) {
     output->setGeometry([this](CCWlOutput* r, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model,
                                int32_t transform_) { //
-        transform  = (wl_output_transform)transform_;
-        position.x = x;
-        position.y = y;
+        transform = (wl_output_transform)transform_;
     });
     output->setDone([this](CCWlOutput* r) { //
         ready = true;
