@@ -630,7 +630,8 @@ void CHyprpicker::initMouse() {
             }
         }
 
-        m_pCursorShapeDevice->sendSetShape(serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
+        if (m_pCursorShapeDevice)
+            m_pCursorShapeDevice->sendSetShape(serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
 
         markDirty();
     });
