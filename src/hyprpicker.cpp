@@ -722,17 +722,18 @@ void CHyprpicker::initKeyboard() {
         if (state != WL_KEYBOARD_KEY_STATE_PRESSED)
             return;
         if (m_pXKBState) {
-            if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Right)
+            int32_t XKBKey = xkb_state_key_get_one_sym(m_pXKBState, key + 8);
+            if (XKBKey == XKB_KEY_Right)
                 m_vLastCoords.x += m_vLastCoords.x < m_pLastSurface->m_pMonitor->size.x;
-            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Left)
+            else if (XKBKey == XKB_KEY_Left)
                 m_vLastCoords.x -= m_vLastCoords.x > 0;
-            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Up)
+            else if (XKBKey == XKB_KEY_Up)
                 m_vLastCoords.y -= m_vLastCoords.y > 0;
-            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Down)
+            else if (XKBKey == XKB_KEY_Down)
                 m_vLastCoords.y += m_vLastCoords.y < m_pLastSurface->m_pMonitor->size.y;
-            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Return)
+            else if (XKBKey == XKB_KEY_Return)
                 outputColor();
-            else if (xkb_state_key_get_one_sym(m_pXKBState, key + 8) == XKB_KEY_Escape)
+            else if (XKBKey == XKB_KEY_Escape)
                 finish(2);
         } else if (key == 1) // Assume keycode 1 is escape
             finish(2);
