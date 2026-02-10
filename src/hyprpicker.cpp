@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <format>
+#include <mutex>
 #include <hyprutils/math/Vector2D.hpp>
 #include <wayland-client-protocol.h>
 #include <xkbcommon/xkbcommon-keysyms.h>

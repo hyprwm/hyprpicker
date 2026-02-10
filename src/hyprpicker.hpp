@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include "defines.hpp"
 #include "helpers/LayerSurface.hpp"
 #include "helpers/PoolBuffer.hpp"
