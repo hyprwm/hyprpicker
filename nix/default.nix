@@ -13,6 +13,7 @@
   libselinux,
   libsepol,
   libthai,
+  libXdmcp,
   libxkbcommon,
   pango,
   pcre,
@@ -21,7 +22,6 @@
   wayland,
   wayland-protocols,
   wayland-scanner,
-  xorg,
   debug ? false,
   version ? "git",
 }:
@@ -52,6 +52,7 @@ stdenv.mkDerivation {
     libselinux
     libsepol
     libthai
+    libXdmcp
     libxkbcommon
     pango
     pcre
@@ -60,7 +61,6 @@ stdenv.mkDerivation {
     wayland
     wayland-protocols
     wayland-scanner
-    xorg.libXdmcp
   ];
 
   outputs = [
