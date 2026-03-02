@@ -32,38 +32,12 @@
         system:
         import nixpkgs {
           localSystem.system = system;
-          overlays = with self.overlays; [ hyprpicker ];
+          overlays = with self.overlays; [ hyprpicker-with-deps ];
         }
       );
-      mkDate =
-        longDate:
-        (lib.concatStringsSep "-" [
-          (builtins.substring 0 4 longDate)
-          (builtins.substring 4 2 longDate)
-          (builtins.substring 6 2 longDate)
-        ]);
-      version = lib.removeSuffix "\n" (builtins.readFile ./VERSION);
     in
     {
-      overlays = {
-        default = self.overlays.hyprpicker;
-        hyprpicker = lib.composeManyExtensions [
-          inputs.hyprutils.overlays.default
-          inputs.hyprwayland-scanner.overlays.default
-          (final: prev: {
-            hyprpicker = prev.callPackage ./nix/default.nix {
-              stdenv = prev.gcc15Stdenv;
-              version =
-                version
-                + "+date="
-                + (mkDate (self.lastModifiedDate or "19700101"))
-                + "_"
-                + (self.shortRev or "dirty");
-            };
-            hyprpicker-debug = final.hyprpicker.override { debug = true; };
-          })
-        ];
-      };
+      overlays = import ./nix/overlays.nix { inherit inputs lib self; };
 
       packages = eachSystem (system: {
         default = self.packages.${system}.hyprpicker;
