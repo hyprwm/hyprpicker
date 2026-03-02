@@ -31,10 +31,7 @@ stdenv.mkDerivation {
 
   src = ../.;
 
-  cmakeBuildType =
-    if debug
-    then "Debug"
-    else "Release";
+  cmakeBuildType = if debug then "Debug" else "Release";
 
   nativeBuildInputs = [
     cmake
