@@ -1,6 +1,7 @@
 #include "hyprpicker.hpp"
 #include "src/debug/Log.hpp"
 #include "src/notify/Notify.hpp"
+#include <cmath>
 #include <csignal>
 #include <cstddef>
 #include <cstdio>
@@ -787,10 +788,19 @@ void CHyprpicker::initMouse() {
 
         double delta = wl_fixed_to_double(value);
 
-        if (delta < 0)
-            m_fZoomScale = std::min(m_fZoomScale + 1.0, 100.0);
+        double velocity = std::pow(M_E, m_fZoomScale * 0.01) - 1.;
+
+        delta *= velocity;
+
+        if (delta > 0)
+            delta = std::min(delta, 1.);
         else
-            m_fZoomScale = std::max(m_fZoomScale - 1.0, 1.0);
+            delta = std::max(delta, -1.);
+
+        if (delta > 0)
+            m_fZoomScale = std::max(m_fZoomScale - delta, 1.);
+        else
+            m_fZoomScale = std::min(m_fZoomScale - delta, 100.);
 
         markDirty();
     });
