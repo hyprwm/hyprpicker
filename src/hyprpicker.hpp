@@ -73,10 +73,10 @@ class CHyprpicker {
     void                                        initKeyboard();
     void                                        initMouse();
 
-    SP<SPoolBuffer>                             getBufferForLS(CLayerSurface*);
+    WP<SPoolBuffer>                             getBufferForLS(CLayerSurface*);
 
-    void                                        convertBuffer(SP<SPoolBuffer>);
-    void*                                       convert24To32Buffer(SP<SPoolBuffer>);
+    void                                        convertBuffer(WP<SPoolBuffer>);
+    void*                                       convert24To32Buffer(WP<SPoolBuffer>);
 
     void                                        markDirty();
 

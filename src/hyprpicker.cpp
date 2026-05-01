@@ -13,7 +13,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 static void sigHandler(int sig) {
-    g_pHyprpicker->m_vLayerSurfaces.clear();
+    g_pHyprpicker->m_vLayerSurfaces.clear(); // Cleans up the /run files
     exit(0);
 }
 
@@ -297,8 +297,8 @@ void CHyprpicker::markDirty() {
     }
 }
 
-SP<SPoolBuffer> CHyprpicker::getBufferForLS(CLayerSurface* pLS) {
-    SP<SPoolBuffer> returns = nullptr;
+WP<SPoolBuffer> CHyprpicker::getBufferForLS(CLayerSurface* pLS) {
+    WP<SPoolBuffer> returns;
 
     for (auto i = 0; i < 2; ++i) {
         if (!pLS->buffers[i] || pLS->buffers[i]->busy)
@@ -353,7 +353,7 @@ int CHyprpicker::createPoolFile(size_t size, std::string& name) {
     return FD;
 }
 
-void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
+void CHyprpicker::convertBuffer(WP<SPoolBuffer> pBuffer) {
     switch (pBuffer->format) {
         case WL_SHM_FORMAT_ARGB8888:
         case WL_SHM_FORMAT_XRGB8888: break;
@@ -404,7 +404,7 @@ void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
 }
 
 // Mallocs a new buffer, which needs to be free'd!
-void* CHyprpicker::convert24To32Buffer(SP<SPoolBuffer> pBuffer) {
+void* CHyprpicker::convert24To32Buffer(WP<SPoolBuffer> pBuffer) {
     uint8_t* newBuffer       = (uint8_t*)malloc((size_t)pBuffer->pixelSize.x * pBuffer->pixelSize.y * 4);
     int      newBufferStride = pBuffer->pixelSize.x * 4;
     uint8_t* oldBuffer       = (uint8_t*)pBuffer->data;
