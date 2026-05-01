@@ -52,6 +52,7 @@ class CHyprpicker {
     bool                                        m_bNoFractional   = false;
     bool                                        m_bDisablePreview = false;
     bool                                        m_bUseLowerCase   = false;
+    bool                                        m_bIncludeCursor  = false;
 
     bool                                        m_bRunning      = true;
     float                                       m_fZoomScale    = 10.0;
