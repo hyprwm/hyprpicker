@@ -23,6 +23,7 @@ static void help() {
               << " -v | --verbose             | Enable more logs\n"
               << " -t | --no-fractional       | Disable fractional scaling support\n"
               << " -d | --disable-preview     | Disable live preview of color\n"
+              << " -c | --cursor              | Include cursor in the frozen preview\n"
               << " -l | --lowercase-hex       | Outputs the hexcode in lowercase\n"
               << " -s | --scale=scale         | Set the zoom scale (between 1 and 10)\n"
               << " -u | --radius=radius       | Set the circle radius (between 1 and 1000)\n"
@@ -46,13 +47,14 @@ int main(int argc, char** argv, char** envp) {
                                                {"quiet", no_argument, nullptr, 'q'},
                                                {"verbose", no_argument, nullptr, 'v'},
                                                {"disable-preview", no_argument, nullptr, 'd'},
+                                               {"cursor", no_argument, nullptr, 'c'},
                                                {"lowercase-hex", no_argument, nullptr, 'l'},
                                                {"version", no_argument, nullptr, 'V'},
                                                {"scale", required_argument, nullptr, 's'},
                                                {"radius", required_argument, nullptr, 'u'},
                                                {nullptr, 0, nullptr, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:o:hnbarzqvtdlVs:u:", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:o:hnbarzqvtdlcVs:u:", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -84,6 +86,7 @@ int main(int argc, char** argv, char** envp) {
             case 'q': Debug::quiet = true; break;
             case 'v': Debug::verbose = true; break;
             case 'd': g_pHyprpicker->m_bDisablePreview = true; break;
+            case 'c': g_pHyprpicker->m_bIncludeCursor = true; break;
             case 'l': g_pHyprpicker->m_bUseLowerCase = true; break;
             case 'V': {
                 std::cout << "hyprpicker v" << HYPRPICKER_VERSION << "\n";

@@ -113,7 +113,7 @@ void CHyprpicker::init() {
 
         m_pLastSurface = m_vLayerSurfaces.back().get();
 
-        m->pSCFrame = makeShared<CCZwlrScreencopyFrameV1>(m_pScreencopyMgr->sendCaptureOutput(false, m->output->resource()));
+        m->pSCFrame = makeShared<CCZwlrScreencopyFrameV1>(m_pScreencopyMgr->sendCaptureOutput(m_bIncludeCursor, m->output->resource()));
         m->pLS      = m_vLayerSurfaces.back().get();
         m->initSCFrame();
     }
