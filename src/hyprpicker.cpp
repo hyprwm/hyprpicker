@@ -13,8 +13,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 static void sigHandler(int sig) {
-    g_pHyprpicker->m_vLayerSurfaces.clear();
-    exit(0);
+    g_pHyprpicker->m_bRunning.store(false);
 }
 
 void CHyprpicker::init() {
@@ -123,11 +122,7 @@ void CHyprpicker::init() {
     while (m_bRunning && wl_display_dispatch(m_pWLDisplay) != -1) {
         //renderSurface(m_pLastSurface);
     }
-
-    if (m_pWLDisplay) {
-        wl_display_disconnect(m_pWLDisplay);
-        m_pWLDisplay = nullptr;
-    }
+    finish(1);
 }
 
 void CHyprpicker::finish(int code) {
