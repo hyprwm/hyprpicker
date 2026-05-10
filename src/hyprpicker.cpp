@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <format>
+#include <iostream>
 #include <mutex>
 #include <hyprutils/math/Vector2D.hpp>
 #include <wayland-client-protocol.h>
@@ -611,7 +612,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_fill(PCAIRO);
 
                 cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 1.0);
-                cairo_select_font_face(PCAIRO, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+                cairo_select_font_face(PCAIRO, m_sFont, CAIRO_FONT_SLANT_NORMAL, m_cWeight);
                 cairo_set_font_size(PCAIRO, 18);
 
                 double padding = 5.0;
