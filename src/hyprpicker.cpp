@@ -208,10 +208,10 @@ void CHyprpicker::outputColor() {
                 Debug::log(NONE, formattedColor.c_str());
 
             if (m_bAutoCopy)
-                NClipboard::copy(hexColor);
+                NClipboard::copy(formattedColor);
 
             if (m_bNotify)
-                NNotify::send(hexColor, hexColor);
+                NNotify::send(hexColor, formattedColor);
 
             finish();
             break;
