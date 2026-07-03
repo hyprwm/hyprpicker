@@ -1,6 +1,7 @@
 #include "hyprpicker.hpp"
 #include "src/debug/Log.hpp"
 #include "src/notify/Notify.hpp"
+#include <algorithm>
 #include <cmath>
 #include <csignal>
 #include <cstddef>
@@ -167,27 +168,15 @@ void CHyprpicker::outputColor() {
     // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
     const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
 
-    std::string   hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
+    std::string hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
+    
+    std::string formattedColor;
 
     switch (m_bSelectedOutputMode) {
         case OUTPUT_CMYK: {
             float c, m, y, k;
             COL.getCMYK(c, m, y, k);
-
-            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(c, m, y, k));
-
-            if (m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-            else
-                Debug::log(NONE, formattedColor.c_str());
-
-            if (m_bAutoCopy)
-                NClipboard::copy(formattedColor);
-
-            if (m_bNotify)
-                NNotify::send(hexColor, formattedColor);
-
-            finish();
+            formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(c, m, y, k));
             break;
         }
         case OUTPUT_HEX: {
@@ -201,36 +190,11 @@ void CHyprpicker::outputColor() {
                 gHex = std::format("{:02X}", COL.g);
                 bHex = std::format("{:02X}", COL.b);
             }
-            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(rHex, gHex, bHex));
-            if (m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-            else
-                Debug::log(NONE, formattedColor.c_str());
-
-            if (m_bAutoCopy)
-                NClipboard::copy(hexColor);
-
-            if (m_bNotify)
-                NNotify::send(hexColor, hexColor);
-
-            finish();
+            formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(rHex, gHex, bHex));
             break;
         }
         case OUTPUT_RGB: {
-            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(COL.r, COL.g, COL.b));
-
-            if (m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-            else
-                Debug::log(NONE, formattedColor.c_str());
-
-            if (m_bAutoCopy)
-                NClipboard::copy(formattedColor);
-
-            if (m_bNotify)
-                NNotify::send(hexColor, formattedColor);
-
-            finish();
+            formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(COL.r, COL.g, COL.b));
             break;
         }
         case OUTPUT_HSL:
@@ -241,22 +205,29 @@ void CHyprpicker::outputColor() {
             else
                 COL.getHSL(h, s, l_or_v);
 
-            std::string formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(h, s, l_or_v));
-            if (m_bFancyOutput)
-                Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
-            else
-                Debug::log(NONE, formattedColor.c_str());
-
-            if (m_bAutoCopy)
-                NClipboard::copy(formattedColor);
-
-            if (m_bNotify)
-                NNotify::send(hexColor, formattedColor);
-
-            finish();
+            formattedColor = std::vformat(m_sOutputFormat, std::make_format_args(h, s, l_or_v));
             break;
         }
     }
+
+    std::string_view matchedStandardName = COL.getStandardColorName();
+    bool shouldCopyName = m_bCopyStandardColorName && !matchedStandardName.empty();
+
+    if (m_bFancyOutput)
+        Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
+    else
+        Debug::log(NONE, formattedColor.c_str());
+
+    if (m_bAutoCopy) {
+        if (shouldCopyName) {
+            NClipboard::copy(std::string(matchedStandardName));
+        } else {
+            NClipboard::copy(formattedColor);
+        }
+    }
+    
+    if (m_bNotify)
+        NNotify::send(hexColor, formattedColor);
 
     finish();
 }
@@ -585,27 +556,43 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 };
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.75);
 
-                double x, y, width = 8 + (11 * previewBuffer.length()), height = 28, radius = 6;
+                std::string_view standardColorName = currentColor.getStandardColorName();
+                bool hasStandardName = !standardColorName.empty();
+
+                double textPadding = 8.0;
+                double characterWidth = 11.0;
+                double previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
+                double standardNameWidth = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
+                
+                double boxWidth = std::max(previewBufferWidth, standardNameWidth);
+                double boxHeight = hasStandardName ? 50.0 : 28.0;
+                double cornerRadius = 6.0;
+
+                double boxPositionX = 0.0;
+                double boxPositionY = 0.0;
 
                 if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
-                    x = CLICKPOS.x - 80;
-                    y = CLICKPOS.y - 40;
+                    boxPositionX = CLICKPOS.x - 80;
+                    boxPositionY = CLICKPOS.y - 40;
                 } else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50)) {
-                    x = CLICKPOS.x;
-                    y = CLICKPOS.y - 40;
+                    boxPositionX = CLICKPOS.x;
+                    boxPositionY = CLICKPOS.y - 40;
                 } else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
-                    x = CLICKPOS.x - 80;
-                    y = CLICKPOS.y + 20;
+                    boxPositionX = CLICKPOS.x - 80;
+                    boxPositionY = CLICKPOS.y + 20;
                 } else {
-                    x = CLICKPOS.x;
-                    y = CLICKPOS.y + 20;
+                    boxPositionX = CLICKPOS.x;
+                    boxPositionY = CLICKPOS.y + 20;
                 }
-                x -= 5.5 * previewBuffer.length();
-                cairo_move_to(PCAIRO, x + radius, y);
-                cairo_arc(PCAIRO, x + width - radius, y + radius, radius, -M_PI_2, 0);
-                cairo_arc(PCAIRO, x + width - radius, y + height - radius, radius, 0, M_PI_2);
-                cairo_arc(PCAIRO, x + radius, y + height - radius, radius, M_PI_2, M_PI);
-                cairo_arc(PCAIRO, x + radius, y + radius, radius, M_PI, -M_PI_2);
+
+                size_t longestTextLength = hasStandardName ? std::max(previewBuffer.length(), standardColorName.length()) : previewBuffer.length();
+                boxPositionX -= 5.5 * longestTextLength;
+
+                cairo_move_to(PCAIRO, boxPositionX + cornerRadius, boxPositionY);
+                cairo_arc(PCAIRO, boxPositionX + boxWidth - cornerRadius, boxPositionY + cornerRadius, cornerRadius, -M_PI_2, 0);
+                cairo_arc(PCAIRO, boxPositionX + boxWidth - cornerRadius, boxPositionY + boxHeight - cornerRadius, cornerRadius, 0, M_PI_2);
+                cairo_arc(PCAIRO, boxPositionX + cornerRadius, boxPositionY + boxHeight - cornerRadius, cornerRadius, M_PI_2, M_PI);
+                cairo_arc(PCAIRO, boxPositionX + cornerRadius, boxPositionY + cornerRadius, cornerRadius, M_PI, -M_PI_2);
 
                 cairo_close_path(PCAIRO);
                 cairo_fill(PCAIRO);
@@ -614,19 +601,28 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_select_font_face(PCAIRO, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
                 cairo_set_font_size(PCAIRO, 18);
 
-                double padding = 5.0;
-                double textX   = x + padding;
+                double internalTextPadding = 5.0;
+                double textDrawPositionX = boxPositionX + internalTextPadding;
+                double textDrawPositionY = 0.0;
 
                 if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
-                    cairo_move_to(PCAIRO, textX, CLICKPOS.y - 20);
+                    textDrawPositionY = CLICKPOS.y - 20;
                 else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50))
-                    cairo_move_to(PCAIRO, textX, CLICKPOS.y - 20);
+                    textDrawPositionY = CLICKPOS.y - 20;
                 else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
-                    cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
+                    textDrawPositionY = CLICKPOS.y + 40;
                 else
-                    cairo_move_to(PCAIRO, textX, CLICKPOS.y + 40);
+                    textDrawPositionY = CLICKPOS.y + 40;
 
-                cairo_show_text(PCAIRO, previewBuffer.c_str());
+                if (hasStandardName) {
+                    cairo_move_to(PCAIRO, textDrawPositionX, textDrawPositionY - 11);
+                    cairo_show_text(PCAIRO, previewBuffer.c_str());
+                    cairo_move_to(PCAIRO, textDrawPositionX, textDrawPositionY + 11);
+                    cairo_show_text(PCAIRO, standardColorName.data());
+                } else {
+                    cairo_move_to(PCAIRO, textDrawPositionX, textDrawPositionY);
+                    cairo_show_text(PCAIRO, previewBuffer.c_str());
+                }
 
                 cairo_surface_flush(PBUFFER->surface);
             }
