@@ -570,13 +570,14 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
                 double boxPositionX = 0.0;
                 double boxPositionY = 0.0;
+                double upwardShift = hasStandardName ? 62.0 : 40.0;
 
                 if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
                     boxPositionX = CLICKPOS.x - 80;
-                    boxPositionY = CLICKPOS.y - 40;
+                    boxPositionY = CLICKPOS.y - upwardShift;
                 } else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50)) {
                     boxPositionX = CLICKPOS.x;
-                    boxPositionY = CLICKPOS.y - 40;
+                    boxPositionY = CLICKPOS.y - upwardShift;
                 } else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
                     boxPositionX = CLICKPOS.x - 80;
                     boxPositionY = CLICKPOS.y + 20;
@@ -603,24 +604,14 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
                 double internalTextPadding = 5.0;
                 double textDrawPositionX = boxPositionX + internalTextPadding;
-                double textDrawPositionY = 0.0;
-
-                if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
-                    textDrawPositionY = CLICKPOS.y - 20;
-                else if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50))
-                    textDrawPositionY = CLICKPOS.y - 20;
-                else if (CLICKPOS.x > (PBUFFER->pixelSize.x - 100))
-                    textDrawPositionY = CLICKPOS.y + 40;
-                else
-                    textDrawPositionY = CLICKPOS.y + 40;
 
                 if (hasStandardName) {
-                    cairo_move_to(PCAIRO, textDrawPositionX, textDrawPositionY - 11);
+                    cairo_move_to(PCAIRO, textDrawPositionX, boxPositionY + 20);
                     cairo_show_text(PCAIRO, previewBuffer.c_str());
-                    cairo_move_to(PCAIRO, textDrawPositionX, textDrawPositionY + 11);
+                    cairo_move_to(PCAIRO, textDrawPositionX, boxPositionY + 42);
                     cairo_show_text(PCAIRO, standardColorName.data());
                 } else {
-                    cairo_move_to(PCAIRO, textDrawPositionX, textDrawPositionY);
+                    cairo_move_to(PCAIRO, textDrawPositionX, boxPositionY + 20);
                     cairo_show_text(PCAIRO, previewBuffer.c_str());
                 }
 
