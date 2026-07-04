@@ -27,6 +27,7 @@ static void help() {
               << " -l | --lowercase-hex       | Outputs the hexcode in lowercase\n"
               << " -s | --scale=scale         | Set the zoom scale (between 1 and 10)\n"
               << " -u | --radius=radius       | Set the circle radius (between 1 and 1000)\n"
+              << " -N | --name                | Copies the standard color name instead of the format if matched (requires -a)\n"
               << " -V | --version             | Print version info\n";
 }
 
@@ -52,9 +53,10 @@ int main(int argc, char** argv, char** envp) {
                                                {"version", no_argument, nullptr, 'V'},
                                                {"scale", required_argument, nullptr, 's'},
                                                {"radius", required_argument, nullptr, 'u'},
+                                               {"name", no_argument, nullptr, 'N'},
                                                {nullptr, 0, nullptr, 0}};
 
-        int                  c = getopt_long(argc, argv, ":f:o:hnbarzqvtdlcVs:u:", long_options, &option_index);
+        int                  c = getopt_long(argc, argv, ":f:o:hnbarzqvtdlcVs:u:N", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -76,6 +78,7 @@ int main(int argc, char** argv, char** envp) {
                 }
                 break;
             case 'o': g_pHyprpicker->m_sOutputFormat = optarg; break;
+            case 'N': g_pHyprpicker->m_bCopyStandardColorName = true; break;
             case 'h': help(); exit(0);
             case 'b': g_pHyprpicker->m_bFancyOutput = false; break;
             case 'n': g_pHyprpicker->m_bNotify = true; break;
