@@ -110,6 +110,8 @@ void SMonitor::initSCFrame() {
 
         pLS->screenBuffer = newBuf;
 
+        g_pHyprpicker->recheckACK();
+        
         g_pHyprpicker->renderSurface(pLS);
 
         pSCFrame.reset();
