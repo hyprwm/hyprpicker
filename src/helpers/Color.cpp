@@ -83,9 +83,9 @@ void CColor::getHSL(float& h, float& s, float& l) const {
 
 std::string_view CColor::getStandardColorName() const {
     struct SStandardColor {
-        uint8_t red;
-        uint8_t green;
-        uint8_t blue;
+        uint8_t          red;
+        uint8_t          green;
+        uint8_t          blue;
         std::string_view colorName;
     };
 
@@ -230,15 +230,13 @@ std::string_view CColor::getStandardColorName() const {
         {0xFF, 0xFF, 0xFF, "white"},
         {0xF5, 0xF5, 0xF5, "whitesmoke"},
         {0xFF, 0xFF, 0x00, "yellow"},
-        {0x9A, 0xCD, 0x32, "yellowgreen"}
+        {0x9A, 0xCD, 0x32, "yellowgreen"},
     }};
 
-    auto matchColor = [this](const SStandardColor& referenceColor) {
-        return referenceColor.red == r && referenceColor.green == g && referenceColor.blue == b;
-    };
+    auto matchColor = [this](const SStandardColor& referenceColor) { return referenceColor.red == r && referenceColor.green == g && referenceColor.blue == b; };
 
     auto iterator = std::ranges::find_if(standardColors, matchColor);
-    
+
     if (iterator != standardColors.end()) {
         return iterator->colorName;
     }

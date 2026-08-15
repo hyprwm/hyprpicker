@@ -41,10 +41,10 @@ void CHyprpicker::init() {
         } else if (strcmp(interface, wl_output_interface.name) == 0) {
             m_mtTickMutex.lock();
 
-            const auto PMONITOR = g_pHyprpicker->m_vMonitors
-                                      .emplace_back(std::make_unique<SMonitor>(
-                                          makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_output_interface, 4))))
-                                      .get();
+            const auto PMONITOR    = g_pHyprpicker->m_vMonitors
+                                         .emplace_back(std::make_unique<SMonitor>(
+                                             makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_output_interface, 4))))
+                                         .get();
             PMONITOR->wayland_name = name;
 
             m_mtTickMutex.unlock();
@@ -168,9 +168,9 @@ void CHyprpicker::outputColor() {
     // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
     const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
 
-    std::string hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
-    
-    std::string formattedColor;
+    std::string   hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
+
+    std::string   formattedColor;
 
     switch (m_bSelectedOutputMode) {
         case OUTPUT_CMYK: {
@@ -211,7 +211,7 @@ void CHyprpicker::outputColor() {
     }
 
     std::string_view matchedStandardName = COL.getStandardColorName();
-    bool shouldCopyName = m_bCopyStandardColorName && !matchedStandardName.empty();
+    bool             shouldCopyName      = m_bCopyStandardColorName && !matchedStandardName.empty();
 
     if (m_bFancyOutput)
         Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
@@ -225,7 +225,7 @@ void CHyprpicker::outputColor() {
             NClipboard::copy(formattedColor);
         }
     }
-    
+
     if (m_bNotify)
         NNotify::send(hexColor, formattedColor);
 
@@ -557,20 +557,20 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.75);
 
                 std::string_view standardColorName = currentColor.getStandardColorName();
-                bool hasStandardName = !standardColorName.empty();
+                bool             hasStandardName   = !standardColorName.empty();
 
-                double textPadding = 8.0;
-                double characterWidth = 11.0;
-                double previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
-                double standardNameWidth = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
-                
-                double boxWidth = std::max(previewBufferWidth, standardNameWidth);
-                double boxHeight = hasStandardName ? 50.0 : 28.0;
-                double cornerRadius = 6.0;
+                double           textPadding        = 8.0;
+                double           characterWidth     = 11.0;
+                double           previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
+                double           standardNameWidth  = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
 
-                double boxPositionX = 0.0;
-                double boxPositionY = 0.0;
-                double upwardShift = hasStandardName ? 62.0 : 40.0;
+                double           boxWidth     = std::max(previewBufferWidth, standardNameWidth);
+                double           boxHeight    = hasStandardName ? 50.0 : 28.0;
+                double           cornerRadius = 6.0;
+
+                double           boxPositionX = 0.0;
+                double           boxPositionY = 0.0;
+                double           upwardShift  = hasStandardName ? 62.0 : 40.0;
 
                 if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
                     boxPositionX = CLICKPOS.x - 80;
@@ -603,7 +603,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_set_font_size(PCAIRO, 18);
 
                 double internalTextPadding = 5.0;
-                double textDrawPositionX = boxPositionX + internalTextPadding;
+                double textDrawPositionX   = boxPositionX + internalTextPadding;
 
                 if (hasStandardName) {
                     cairo_move_to(PCAIRO, textDrawPositionX, boxPositionY + 20);
