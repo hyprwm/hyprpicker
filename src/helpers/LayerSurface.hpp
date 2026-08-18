@@ -30,8 +30,6 @@ class CLayerSurface {
     SP<SPoolBuffer>           buffers[2];
 
     SP<SPoolBuffer>           screenBuffer;
-    uint32_t                  scflags            = 0;
-    uint32_t                  screenBufferFormat = 0;
 
     bool                      dirty = true;
 

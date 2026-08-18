@@ -41,10 +41,10 @@ void CHyprpicker::init() {
         } else if (strcmp(interface, wl_output_interface.name) == 0) {
             m_mtTickMutex.lock();
 
-            const auto PMONITOR = g_pHyprpicker->m_vMonitors
-                                      .emplace_back(std::make_unique<SMonitor>(
-                                          makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_output_interface, 4))))
-                                      .get();
+            const auto PMONITOR    = g_pHyprpicker->m_vMonitors
+                                         .emplace_back(std::make_unique<SMonitor>(
+                                             makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_output_interface, 4))))
+                                         .get();
             PMONITOR->wayland_name = name;
 
             m_mtTickMutex.unlock();
@@ -75,9 +75,12 @@ void CHyprpicker::init() {
                     m_pKeyboard.reset();
             });
 
-        } else if (strcmp(interface, zwlr_screencopy_manager_v1_interface.name) == 0) {
-            m_pScreencopyMgr =
-                makeShared<CCZwlrScreencopyManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &zwlr_screencopy_manager_v1_interface, 1));
+        } else if (strcmp(interface, ext_output_image_capture_source_manager_v1_interface.name) == 0) {
+            m_pImageCaptureSourceMgr = makeShared<CCExtOutputImageCaptureSourceManagerV1>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &ext_output_image_capture_source_manager_v1_interface, 1));
+        } else if (strcmp(interface, ext_image_copy_capture_manager_v1_interface.name) == 0) {
+            m_pImageCopyCaptureMgr = makeShared<CCExtImageCopyCaptureManagerV1>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &ext_image_copy_capture_manager_v1_interface, 1));
         } else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
             m_pCursorShapeMgr =
                 makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wp_cursor_shape_manager_v1_interface, 1));
@@ -94,8 +97,8 @@ void CHyprpicker::init() {
     if (!m_pCursorShapeMgr)
         Debug::log(ERR, "cursor_shape_v1 not supported, cursor won't be affected");
 
-    if (!m_pScreencopyMgr) {
-        Debug::log(CRIT, "zwlr_screencopy_v1 not supported, can't proceed");
+    if (!m_pImageCaptureSourceMgr || !m_pImageCopyCaptureMgr) {
+        Debug::log(CRIT, "ext-image-copy-capture-v1 output capture is not supported, can't proceed");
         exit(1);
     }
 
@@ -113,9 +116,8 @@ void CHyprpicker::init() {
 
         m_pLastSurface = m_vLayerSurfaces.back().get();
 
-        m->pSCFrame = makeShared<CCZwlrScreencopyFrameV1>(m_pScreencopyMgr->sendCaptureOutput(m_bIncludeCursor, m->output->resource()));
-        m->pLS      = m_vLayerSurfaces.back().get();
-        m->initSCFrame();
+        m->pLS = m_vLayerSurfaces.back().get();
+        m->initCapture();
     }
 
     wl_display_roundtrip(m_pWLDisplay);
@@ -136,7 +138,8 @@ void CHyprpicker::finish(int code) {
         m_pRegistry.reset();
         m_pSHM.reset();
         m_pLayerShell.reset();
-        m_pScreencopyMgr.reset();
+        m_pImageCopyCaptureMgr.reset();
+        m_pImageCaptureSourceMgr.reset();
         m_pCursorShapeMgr.reset();
         m_pCursorShapeDevice.reset();
         m_pSeat.reset();
@@ -168,9 +171,9 @@ void CHyprpicker::outputColor() {
     // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
     const uint8_t FG = 0.2126 * FLUMI(COL.r / 255.0f) + 0.7152 * FLUMI(COL.g / 255.0f) + 0.0722 * FLUMI(COL.b / 255.0f) > 0.17913 ? 0 : 255;
 
-    std::string hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
-    
-    std::string formattedColor;
+    std::string   hexColor = std::format("#{0:02x}{1:02x}{2:02x}", COL.r, COL.g, COL.b);
+
+    std::string   formattedColor;
 
     switch (m_bSelectedOutputMode) {
         case OUTPUT_CMYK: {
@@ -211,7 +214,7 @@ void CHyprpicker::outputColor() {
     }
 
     std::string_view matchedStandardName = COL.getStandardColorName();
-    bool shouldCopyName = m_bCopyStandardColorName && !matchedStandardName.empty();
+    bool             shouldCopyName      = m_bCopyStandardColorName && !matchedStandardName.empty();
 
     if (m_bFancyOutput)
         Debug::log(NONE, "\033[38;2;%i;%i;%i;48;2;%i;%i;%im%s\033[0m", FG, FG, FG, COL.r, COL.g, COL.b, formattedColor.c_str());
@@ -225,7 +228,7 @@ void CHyprpicker::outputColor() {
             NClipboard::copy(formattedColor);
         }
     }
-    
+
     if (m_bNotify)
         NNotify::send(hexColor, formattedColor);
 
@@ -321,8 +324,15 @@ int CHyprpicker::createPoolFile(size_t size, std::string& name) {
 
 void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
     switch (pBuffer->format) {
-        case WL_SHM_FORMAT_ARGB8888:
-        case WL_SHM_FORMAT_XRGB8888: break;
+        case WL_SHM_FORMAT_ARGB8888: break;
+        case WL_SHM_FORMAT_XRGB8888: {
+            uint8_t* data = (uint8_t*)pBuffer->data;
+
+            for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
+                for (int x = 0; x < pBuffer->pixelSize.x; ++x)
+                    data[static_cast<size_t>(y) * pBuffer->stride + static_cast<size_t>(x) * 4 + 3] = 0xFF;
+            }
+        } break;
         case WL_SHM_FORMAT_ABGR8888:
         case WL_SHM_FORMAT_XBGR8888: {
             uint8_t* data = (uint8_t*)pBuffer->data;
@@ -335,9 +345,11 @@ void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
                         unsigned char green;
                         unsigned char red;
                         unsigned char alpha;
-                    }* px = (struct SPixel*)(data + (static_cast<ptrdiff_t>(y * (int)pBuffer->pixelSize.x * 4)) + (static_cast<ptrdiff_t>(x * 4)));
+                    }* px = (struct SPixel*)(data + static_cast<size_t>(y) * pBuffer->stride + static_cast<size_t>(x) * 4);
 
                     std::swap(px->red, px->blue);
+                    if (pBuffer->format == WL_SHM_FORMAT_XBGR8888)
+                        px->alpha = 0xFF;
                 }
             }
         } break;
@@ -349,16 +361,15 @@ void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
 
             for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
                 for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
-                    uint32_t* px = (uint32_t*)(data + (static_cast<ptrdiff_t>(y * (int)pBuffer->pixelSize.x * 4)) + (static_cast<ptrdiff_t>(x * 4)));
+                    uint32_t* px = (uint32_t*)(data + static_cast<size_t>(y) * pBuffer->stride + static_cast<size_t>(x) * 4);
 
                     // conv to 8 bit
                     uint8_t R = (uint8_t)std::round((255.0 * (((*px) & 0b00000000000000000000001111111111) >> 0) / 1023.0));
                     uint8_t G = (uint8_t)std::round((255.0 * (((*px) & 0b00000000000011111111110000000000) >> 10) / 1023.0));
                     uint8_t B = (uint8_t)std::round((255.0 * (((*px) & 0b00111111111100000000000000000000) >> 20) / 1023.0));
-                    uint8_t A = (uint8_t)std::round((255.0 * (((*px) & 0b11000000000000000000000000000000) >> 30) / 3.0));
 
                     // write 8-bit values
-                    *px = ((FLIP ? B : R) << 0) + (G << 8) + ((FLIP ? R : B) << 16) + (A << 24);
+                    *px = ((FLIP ? B : R) << 0) + (G << 8) + ((FLIP ? R : B) << 16) + (0xFFU << 24);
                 }
             }
         } break;
@@ -371,9 +382,16 @@ void CHyprpicker::convertBuffer(SP<SPoolBuffer> pBuffer) {
 
 // Mallocs a new buffer, which needs to be free'd!
 void* CHyprpicker::convert24To32Buffer(SP<SPoolBuffer> pBuffer) {
-    uint8_t* newBuffer       = (uint8_t*)malloc((size_t)pBuffer->pixelSize.x * pBuffer->pixelSize.y * 4);
-    int      newBufferStride = pBuffer->pixelSize.x * 4;
-    uint8_t* oldBuffer       = (uint8_t*)pBuffer->data;
+    const size_t WIDTH           = static_cast<size_t>(pBuffer->pixelSize.x);
+    const size_t HEIGHT          = static_cast<size_t>(pBuffer->pixelSize.y);
+    const size_t NEWBUFFERSTRIDE = WIDTH * 4;
+    uint8_t*     newBuffer       = (uint8_t*)malloc(NEWBUFFERSTRIDE * HEIGHT);
+    uint8_t*     oldBuffer       = (uint8_t*)pBuffer->data;
+
+    if (!newBuffer) {
+        Debug::log(CRIT, "Failed to allocate a 32-bit capture buffer");
+        g_pHyprpicker->finish(1);
+    }
 
     switch (pBuffer->format) {
         case WL_SHM_FORMAT_BGR888: {
@@ -391,7 +409,7 @@ void* CHyprpicker::convert24To32Buffer(SP<SPoolBuffer> pBuffer) {
                         unsigned char green;
                         unsigned char red;
                         unsigned char alpha;
-                    }* dstPx = (struct SPixel4*)(newBuffer + (static_cast<ptrdiff_t>(y * newBufferStride)) + (static_cast<ptrdiff_t>(x * 4)));
+                    }* dstPx = (struct SPixel4*)(newBuffer + static_cast<size_t>(y) * NEWBUFFERSTRIDE + static_cast<size_t>(x) * 4);
                     *dstPx   = {.blue = srcPx->red, .green = srcPx->green, .red = srcPx->blue, .alpha = 0xFF};
                 }
             }
@@ -400,19 +418,19 @@ void* CHyprpicker::convert24To32Buffer(SP<SPoolBuffer> pBuffer) {
             for (int y = 0; y < pBuffer->pixelSize.y; ++y) {
                 for (int x = 0; x < pBuffer->pixelSize.x; ++x) {
                     struct SPixel3 {
-                        // big-endian RGB
-                        unsigned char red;
-                        unsigned char green;
+                        // little-endian RGB
                         unsigned char blue;
+                        unsigned char green;
+                        unsigned char red;
                     }* srcPx = (struct SPixel3*)(oldBuffer + (y * pBuffer->stride) + (x * 3));
                     struct SPixel4 {
-                        // big-endian ARGB
-                        unsigned char alpha;
-                        unsigned char red;
-                        unsigned char green;
+                        // little-endian ARGB
                         unsigned char blue;
-                    }* dstPx = (struct SPixel4*)(newBuffer + (y * newBufferStride) + (x * 4));
-                    *dstPx   = {.alpha = 0xFF, .red = srcPx->red, .green = srcPx->green, .blue = srcPx->blue};
+                        unsigned char green;
+                        unsigned char red;
+                        unsigned char alpha;
+                    }* dstPx = (struct SPixel4*)(newBuffer + static_cast<size_t>(y) * NEWBUFFERSTRIDE + static_cast<size_t>(x) * 4);
+                    *dstPx   = {.blue = srcPx->blue, .green = srcPx->green, .red = srcPx->red, .alpha = 0xFF};
                 }
             }
         } break;
@@ -557,20 +575,20 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.75);
 
                 std::string_view standardColorName = currentColor.getStandardColorName();
-                bool hasStandardName = !standardColorName.empty();
+                bool             hasStandardName   = !standardColorName.empty();
 
-                double textPadding = 8.0;
-                double characterWidth = 11.0;
-                double previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
-                double standardNameWidth = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
-                
-                double boxWidth = std::max(previewBufferWidth, standardNameWidth);
-                double boxHeight = hasStandardName ? 50.0 : 28.0;
-                double cornerRadius = 6.0;
+                double           textPadding        = 8.0;
+                double           characterWidth     = 11.0;
+                double           previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
+                double           standardNameWidth  = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
 
-                double boxPositionX = 0.0;
-                double boxPositionY = 0.0;
-                double upwardShift = hasStandardName ? 62.0 : 40.0;
+                double           boxWidth     = std::max(previewBufferWidth, standardNameWidth);
+                double           boxHeight    = hasStandardName ? 50.0 : 28.0;
+                double           cornerRadius = 6.0;
+
+                double           boxPositionX = 0.0;
+                double           boxPositionY = 0.0;
+                double           upwardShift  = hasStandardName ? 62.0 : 40.0;
 
                 if (CLICKPOS.y > (PBUFFER->pixelSize.y - 50) && CLICKPOS.x > (PBUFFER->pixelSize.x - 100)) {
                     boxPositionX = CLICKPOS.x - 80;
@@ -603,7 +621,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_set_font_size(PCAIRO, 18);
 
                 double internalTextPadding = 5.0;
-                double textDrawPositionX = boxPositionX + internalTextPadding;
+                double textDrawPositionX   = boxPositionX + internalTextPadding;
 
                 if (hasStandardName) {
                     cairo_move_to(PCAIRO, textDrawPositionX, boxPositionY + 20);

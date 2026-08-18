@@ -59,7 +59,7 @@ pkg_check_modules(
   REQUIRED
   IMPORTED_TARGET
   wayland-client
-  wayland-protocols
+  wayland-protocols>=1.37
   xkbcommon
   cairo
   pango
@@ -105,13 +105,15 @@ endfunction()
 protocolwayland()
 
 protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
-protocolnew("protocols" "wlr-screencopy-unstable-v1" true)
 protocolnew("stable/linux-dmabuf" "linux-dmabuf-v1" false)
 protocolnew("staging/fractional-scale" "fractional-scale-v1" false)
 protocolnew("stable/viewporter" "viewporter" false)
 protocolnew("stable/xdg-shell" "xdg-shell" false)
 protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
 protocolnew("stable/tablet" "tablet-v2" false)
+protocolnew("staging/ext-foreign-toplevel-list" "ext-foreign-toplevel-list-v1" false)
+protocolnew("staging/ext-image-capture-source" "ext-image-capture-source-v1" false)
+protocolnew("staging/ext-image-copy-capture" "ext-image-copy-capture-v1" false)
 
 target_compile_definitions(hyprpicker
                            PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")

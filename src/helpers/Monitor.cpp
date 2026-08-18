@@ -1,12 +1,11 @@
 #include "Monitor.hpp"
 #include "LayerSurface.hpp"
 #include "../hyprpicker.hpp"
+#include <array>
+#include <limits>
+#include <optional>
 
 SMonitor::SMonitor(SP<CCWlOutput> output_) : output(output_) {
-    output->setGeometry([this](CCWlOutput* r, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model,
-                               int32_t transform_) { //
-        transform = (wl_output_transform)transform_;
-    });
     output->setDone([this](CCWlOutput* r) { //
         ready = true;
     });
@@ -19,105 +18,156 @@ SMonitor::SMonitor(SP<CCWlOutput> output_) : output(output_) {
     });
 }
 
-void SMonitor::initSCFrame() {
-    pSCFrame->setBuffer([this](CCZwlrScreencopyFrameV1* r, uint32_t format, uint32_t width, uint32_t height, uint32_t stride) {
-        pLS->screenBufferFormat = format;
+namespace {
+    struct SCaptureFormat {
+        uint32_t format;
+        uint32_t bytesPerPixel;
+    };
 
-        if (!pLS->screenBuffer)
-            pLS->screenBuffer = makeShared<SPoolBuffer>(Vector2D{(double)width, (double)height}, format, stride);
+    constexpr std::array<SCaptureFormat, 8> CAPTURE_FORMATS = {{{WL_SHM_FORMAT_XRGB8888, 4},
+                                                                {WL_SHM_FORMAT_ARGB8888, 4},
+                                                                {WL_SHM_FORMAT_XBGR8888, 4},
+                                                                {WL_SHM_FORMAT_ABGR8888, 4},
+                                                                {WL_SHM_FORMAT_XRGB2101010, 4},
+                                                                {WL_SHM_FORMAT_XBGR2101010, 4},
+                                                                {WL_SHM_FORMAT_BGR888, 3},
+                                                                {WL_SHM_FORMAT_RGB888, 3}}};
 
-        pSCFrame->sendCopy(pLS->screenBuffer->buffer->resource());
+    std::optional<SCaptureFormat>           selectCaptureFormat(const std::vector<uint32_t>& advertisedFormats) {
+        for (const auto& candidate : CAPTURE_FORMATS) {
+            if (std::find(advertisedFormats.begin(), advertisedFormats.end(), candidate.format) != advertisedFormats.end())
+                return candidate;
+        }
+
+        return std::nullopt;
+    }
+}
+
+void SMonitor::initCapture() {
+    pCaptureSource = makeShared<CCExtImageCaptureSourceV1>(g_pHyprpicker->m_pImageCaptureSourceMgr->sendCreateSource(output->resource()));
+
+    auto OPTIONS = static_cast<extImageCopyCaptureManagerV1Options>(0);
+    if (g_pHyprpicker->m_bIncludeCursor)
+        OPTIONS = EXT_IMAGE_COPY_CAPTURE_MANAGER_V1_OPTIONS_PAINT_CURSORS;
+    pCaptureSession = makeShared<CCExtImageCopyCaptureSessionV1>(g_pHyprpicker->m_pImageCopyCaptureMgr->sendCreateSession(pCaptureSource->resource(), OPTIONS));
+
+    pCaptureSession->setBufferSize([this](CCExtImageCopyCaptureSessionV1* r, uint32_t width, uint32_t height) {
+        pendingConstraints.width   = width;
+        pendingConstraints.height  = height;
+        pendingConstraints.hasSize = true;
     });
-    pSCFrame->setFlags([this](CCZwlrScreencopyFrameV1* r, uint32_t flags) {
-        pLS->scflags = flags;
-
-        g_pHyprpicker->recheckACK();
-    });
-    pSCFrame->setReady([this](CCZwlrScreencopyFrameV1* r, uint32_t tv_sec_hi, uint32_t tv_sec_lo, uint32_t tv_nsec) {
-        Vector2D transformedSize = pLS->screenBuffer->pixelSize;
-
-        if (pLS->m_pMonitor->transform % 2 == 1)
-            std::swap(transformedSize.x, transformedSize.y);
-
-        Debug::log(TRACE, "Frame ready: pixel %.0fx%.0f, xfmd: %.0fx%.0f", pLS->screenBuffer->pixelSize.x, pLS->screenBuffer->pixelSize.y, transformedSize.x, transformedSize.y);
-
-        SP<SPoolBuffer> newBuf = makeShared<SPoolBuffer>(transformedSize, pLS->screenBufferFormat, transformedSize.x * 4);
-
-        int             bytesPerPixel = pLS->screenBuffer->stride / (int)pLS->screenBuffer->pixelSize.x;
-        void*           data          = pLS->screenBuffer->data;
-        if (bytesPerPixel == 4)
-            g_pHyprpicker->convertBuffer(pLS->screenBuffer);
-        else if (bytesPerPixel == 3) {
-            Debug::log(WARN, "24 bit formats are unsupported, hyprpicker may or may not work as intended!");
-            data                          = g_pHyprpicker->convert24To32Buffer(pLS->screenBuffer);
-            pLS->screenBuffer->paddedData = data;
-        } else {
-            Debug::log(CRIT, "Unsupported stride/bytes per pixel %i", bytesPerPixel);
+    pCaptureSession->setShmFormat([this](CCExtImageCopyCaptureSessionV1* r, uint32_t format) { pendingConstraints.shmFormats.emplace_back(format); });
+    pCaptureSession->setDone([this](CCExtImageCopyCaptureSessionV1* r) {
+        if (!pendingConstraints.hasSize || pendingConstraints.width == 0 || pendingConstraints.height == 0) {
+            Debug::log(CRIT, "Image copy capture provided invalid buffer constraints for output %s", name.c_str());
             g_pHyprpicker->finish(1);
         }
 
-        cairo_surface_t* oldSurface = cairo_image_surface_create_for_data((unsigned char*)data, CAIRO_FORMAT_ARGB32, pLS->screenBuffer->pixelSize.x, pLS->screenBuffer->pixelSize.y,
-                                                                          pLS->screenBuffer->pixelSize.x * 4);
+        constraints        = std::move(pendingConstraints);
+        pendingConstraints = {};
+        ++constraintsGeneration;
 
-        cairo_surface_flush(oldSurface);
+        if (!selectCaptureFormat(constraints.shmFormats)) {
+            Debug::log(CRIT, "Image copy capture did not provide a supported SHM format for output %s", name.c_str());
+            g_pHyprpicker->finish(1);
+        }
 
-        newBuf->surface = cairo_image_surface_create_for_data((unsigned char*)newBuf->data, CAIRO_FORMAT_ARGB32, transformedSize.x, transformedSize.y, transformedSize.x * 4);
-
-        const auto PCAIRO = cairo_create(newBuf->surface);
-
-        auto       cairoTransformMtx = [&](cairo_matrix_t* mtx) -> void {
-            const auto TR = pLS->m_pMonitor->transform % 4;
-
-            if (TR == 0)
-                return;
-
-            cairo_matrix_rotate(mtx, -M_PI_2 * (double)TR);
-
-            if (TR == 1)
-                cairo_matrix_translate(mtx, -transformedSize.x, 0);
-            else if (TR == 2)
-                cairo_matrix_translate(mtx, -transformedSize.x, -transformedSize.y);
-            else if (TR == 3)
-                cairo_matrix_translate(mtx, 0, -transformedSize.y);
-
-            // TODO: flipped
-        };
-
-        cairo_save(PCAIRO);
-
-        cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
-
-        cairo_rectangle(PCAIRO, 0, 0, 0xFFFF, 0xFFFF);
-        cairo_fill(PCAIRO);
-
-        const auto PATTERNPRE = cairo_pattern_create_for_surface(oldSurface);
-        cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
-        cairo_matrix_t matrixPre;
-        cairo_matrix_init_identity(&matrixPre);
-        cairo_matrix_scale(&matrixPre, 1.0, 1.0);
-        cairoTransformMtx(&matrixPre);
-        cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
-        cairo_set_source(PCAIRO, PATTERNPRE);
-        cairo_paint(PCAIRO);
-
-        cairo_surface_flush(newBuf->surface);
-
-        cairo_pattern_destroy(PATTERNPRE);
-
-        cairo_destroy(PCAIRO);
-
-        cairo_surface_destroy(oldSurface);
-
-        pLS->screenBuffer = newBuf;
-
-        g_pHyprpicker->recheckACK();
-        
-        g_pHyprpicker->renderSurface(pLS);
-
-        pSCFrame.reset();
+        if (!pCaptureFrame)
+            capture();
     });
-    pSCFrame->setFailed([](CCZwlrScreencopyFrameV1* r) {
-        Debug::log(CRIT, "Failed to get a Screencopy!");
+    pCaptureSession->setStopped([this](CCExtImageCopyCaptureSessionV1* r) {
+        Debug::log(CRIT, "Image copy capture session stopped for output %s", name.c_str());
         g_pHyprpicker->finish(1);
     });
+}
+
+void SMonitor::capture() {
+    const auto FORMAT = selectCaptureFormat(constraints.shmFormats);
+    if (!FORMAT) {
+        Debug::log(CRIT, "Image copy capture has no usable SHM format for output %s", name.c_str());
+        g_pHyprpicker->finish(1);
+    }
+
+    constexpr uint64_t MAX_WAYLAND_SIZE = std::numeric_limits<int32_t>::max();
+    const uint64_t     stride           = static_cast<uint64_t>(constraints.width) * FORMAT->bytesPerPixel;
+    const uint64_t     normalizedStride = static_cast<uint64_t>(constraints.width) * 4;
+    if (constraints.width > MAX_WAYLAND_SIZE || constraints.height > MAX_WAYLAND_SIZE || stride > MAX_WAYLAND_SIZE || normalizedStride > MAX_WAYLAND_SIZE ||
+        stride * constraints.height > MAX_WAYLAND_SIZE) {
+        Debug::log(CRIT, "Image copy capture provided an oversized buffer for output %s", name.c_str());
+        g_pHyprpicker->finish(1);
+    }
+
+    captureBytesPerPixel       = FORMAT->bytesPerPixel;
+    frameConstraintsGeneration = constraintsGeneration;
+    pLS->screenBuffer =
+        makeShared<SPoolBuffer>(Vector2D{static_cast<double>(constraints.width), static_cast<double>(constraints.height)}, FORMAT->format, static_cast<uint32_t>(stride));
+    pCaptureFrame = makeShared<CCExtImageCopyCaptureFrameV1>(pCaptureSession->sendCreateFrame());
+
+    pCaptureFrame->setReady([this](CCExtImageCopyCaptureFrameV1* r) { captureReady(); });
+    pCaptureFrame->setFailed([this](CCExtImageCopyCaptureFrameV1* r, extImageCopyCaptureFrameV1FailureReason reason) { captureFailed(reason); });
+
+    pCaptureFrame->sendAttachBuffer(pLS->screenBuffer->buffer->resource());
+    pCaptureFrame->sendDamageBuffer(0, 0, static_cast<int32_t>(constraints.width), static_cast<int32_t>(constraints.height));
+    pCaptureFrame->sendCapture();
+}
+
+void SMonitor::captureReady() {
+    if (!pLS->screenBuffer) {
+        Debug::log(CRIT, "Image copy capture returned without a buffer for output %s", name.c_str());
+        g_pHyprpicker->finish(1);
+    }
+
+    void* data = pLS->screenBuffer->data;
+    if (captureBytesPerPixel == 4)
+        g_pHyprpicker->convertBuffer(pLS->screenBuffer);
+    else if (captureBytesPerPixel == 3) {
+        data                          = g_pHyprpicker->convert24To32Buffer(pLS->screenBuffer);
+        pLS->screenBuffer->paddedData = data;
+    } else {
+        Debug::log(CRIT, "Unsupported image copy capture pixel size %u", captureBytesPerPixel);
+        g_pHyprpicker->finish(1);
+    }
+
+    const auto CAIROSTRIDE = static_cast<int32_t>(pLS->screenBuffer->pixelSize.x) * 4;
+    pLS->screenBuffer->surface =
+        cairo_image_surface_create_for_data(static_cast<unsigned char*>(data), CAIRO_FORMAT_ARGB32, pLS->screenBuffer->pixelSize.x, pLS->screenBuffer->pixelSize.y, CAIROSTRIDE);
+    if (cairo_surface_status(pLS->screenBuffer->surface) != CAIRO_STATUS_SUCCESS) {
+        Debug::log(CRIT, "Failed to create a Cairo surface for captured output %s", name.c_str());
+        g_pHyprpicker->finish(1);
+    }
+
+    Debug::log(TRACE, "Image copy frame ready: pixel %.0fx%.0f", pLS->screenBuffer->pixelSize.x, pLS->screenBuffer->pixelSize.y);
+
+    g_pHyprpicker->recheckACK();
+    g_pHyprpicker->renderSurface(pLS);
+
+    pCaptureFrame.reset();
+    pCaptureSession.reset();
+    pCaptureSource.reset();
+}
+
+void SMonitor::captureFailed(extImageCopyCaptureFrameV1FailureReason reason) {
+    pCaptureFrame.reset();
+    pLS->screenBuffer.reset();
+
+    if (reason == EXT_IMAGE_COPY_CAPTURE_FRAME_V1_FAILURE_REASON_BUFFER_CONSTRAINTS) {
+        if (constraintsGeneration > frameConstraintsGeneration)
+            capture();
+        else
+            Debug::log(WARN, "Image copy capture constraints changed for output %s, waiting for a new constraint batch", name.c_str());
+        return;
+    }
+
+    if (reason == EXT_IMAGE_COPY_CAPTURE_FRAME_V1_FAILURE_REASON_UNKNOWN && unknownFailureCount++ == 0) {
+        Debug::log(WARN, "Image copy capture failed for output %s, retrying", name.c_str());
+        capture();
+        return;
+    }
+
+    if (reason == EXT_IMAGE_COPY_CAPTURE_FRAME_V1_FAILURE_REASON_STOPPED)
+        Debug::log(CRIT, "Image copy capture session stopped for output %s", name.c_str());
+    else
+        Debug::log(CRIT, "Image copy capture failed for output %s", name.c_str());
+
+    g_pHyprpicker->finish(1);
 }
