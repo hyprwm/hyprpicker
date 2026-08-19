@@ -14,7 +14,7 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) : m_pMonitor(pMonitor) {
     if (!g_pHyprpicker->m_bNoFractional) {
         pViewport = makeShared<CCWpViewport>(g_pHyprpicker->m_pViewporter->sendGetViewport(pSurface->resource()));
 
-        // this will not actually be used, as we assume we'll be fullscreen and we can get the real dimensions from screencopy, but we'll have
+        // this will not actually be used, as we assume we'll be fullscreen and we can get the real dimensions from image copy capture, but we'll have
         // this for if we need it in the future
         pFractionalScale = makeShared<CCWpFractionalScaleV1>(g_pHyprpicker->m_pFractionalMgr->sendGetFractionalScale(pSurface->resource()));
         pFractionalScale->setPreferredScale([this](CCWpFractionalScaleV1* r, uint32_t scale120) { //

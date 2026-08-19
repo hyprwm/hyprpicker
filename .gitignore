@@ -27,3 +27,6 @@ protocols/*.hpp
 gmon.out
 *.out
 *.tar.gz
+
+.direnv/
+.envrc

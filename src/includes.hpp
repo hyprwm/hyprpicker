@@ -11,9 +11,10 @@
 #include <cmath>
 
 #include "protocols/cursor-shape-v1.hpp"
+#include "protocols/ext-image-capture-source-v1.hpp"
+#include "protocols/ext-image-copy-capture-v1.hpp"
 #include "protocols/fractional-scale-v1.hpp"
 #include "protocols/wlr-layer-shell-unstable-v1.hpp"
-#include "protocols/wlr-screencopy-unstable-v1.hpp"
 #include "protocols/viewporter.hpp"
 #include "protocols/wayland.hpp"
 
