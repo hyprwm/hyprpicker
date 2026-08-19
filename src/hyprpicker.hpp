@@ -26,7 +26,8 @@ class CHyprpicker {
     SP<CCWlRegistry>                            m_pRegistry;
     SP<CCWlShm>                                 m_pSHM;
     SP<CCZwlrLayerShellV1>                      m_pLayerShell;
-    SP<CCZwlrScreencopyManagerV1>               m_pScreencopyMgr;
+    SP<CCExtOutputImageCaptureSourceManagerV1>  m_pImageCaptureSourceMgr;
+    SP<CCExtImageCopyCaptureManagerV1>          m_pImageCopyCaptureMgr;
     SP<CCWpCursorShapeManagerV1>                m_pCursorShapeMgr;
     SP<CCWpCursorShapeDeviceV1>                 m_pCursorShapeDevice;
     SP<CCWlSeat>                                m_pSeat;

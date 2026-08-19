@@ -108,7 +108,7 @@ int main(int argc, char** argv, char** envp) {
                     exit(1);
                 }
 #else
-                auto  result = std::from_chars(optarg, optarg + strlen(optarg), value);
+                auto result = std::from_chars(optarg, optarg + strlen(optarg), value);
 
                 if (result.ec != std::errc() || result.ptr != optarg + strlen(optarg)) {
                     std::cerr << "Invalid scale value: " << optarg << "\n";
