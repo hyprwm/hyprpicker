@@ -70,7 +70,6 @@ static void onCallbackDone(CLayerSurface* surf, uint32_t when) {
 }
 
 void CLayerSurface::sendFrame() {
-    lastBuffer          = lastBuffer == 0 ? 1 : 0;
     const auto& PBUFFER = buffers[lastBuffer];
 
     frameCallback = makeShared<CCWlCallback>(pSurface->sendFrame());

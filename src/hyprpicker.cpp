@@ -162,8 +162,20 @@ void CHyprpicker::outputColor() {
     const auto FLUMI = [](const float& c) -> float { return c <= 0.03928 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4); };
 
     // get the px and print it
-    const auto MOUSECOORDSABS = m_vLastCoords.floor() / m_pLastSurface->m_pMonitor->size;
-    const auto CLICKPOS       = MOUSECOORDSABS * m_pLastSurface->screenBuffer->pixelSize;
+    const auto& monSize     = m_pLastSurface->m_pMonitor->size;
+    const auto& screenSize  = m_pLastSurface->screenBuffer->pixelSize;
+    const auto  MOUSECOORDSABS = m_vLastCoords.floor() / monSize;
+    const int   tr          = m_pLastSurface->m_pMonitor->transform;
+    Vector2D     CLICKPOS;
+
+    if (tr % 2 == 1) {
+        if (tr == 1)
+            CLICKPOS = {MOUSECOORDSABS.y * screenSize.x, screenSize.y - 1.0 - MOUSECOORDSABS.x * screenSize.y};
+        else
+            CLICKPOS = {screenSize.x - 1.0 - MOUSECOORDSABS.y * screenSize.x, MOUSECOORDSABS.x * screenSize.y};
+    } else {
+        CLICKPOS = MOUSECOORDSABS * screenSize;
+    }
 
     const auto COL = getColorFromPixel(m_pLastSurface, CLICKPOS);
 
@@ -460,23 +472,42 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
     cairo_save(PCAIRO);
 
+    cairo_set_operator(PCAIRO, CAIRO_OPERATOR_SOURCE);
     cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
 
     cairo_rectangle(PCAIRO, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
     cairo_fill(PCAIRO);
+    cairo_set_operator(PCAIRO, CAIRO_OPERATOR_OVER);
 
     if (pSurface == m_pLastSurface && !forceInactive && m_bCoordsInitialized) {
-        const auto SCALEBUFS      = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
-        const auto MOUSECOORDSABS = m_vLastCoords.floor() / pSurface->m_pMonitor->size;
-        const auto CLICKPOS       = MOUSECOORDSABS * PBUFFER->pixelSize;
+        const auto& srcSize  = pSurface->screenBuffer->pixelSize;
+        const auto& monSize  = pSurface->m_pMonitor->size;
+        const int   tr       = pSurface->m_pMonitor->transform;
+        const bool  rotated  = tr % 2 == 1;
+        const auto  scale    = PBUFFER->pixelSize / monSize;
+        const auto  MOUSECOORDSABS = m_vLastCoords.floor() / monSize;
+        const auto  CLICKPOS       = MOUSECOORDSABS * PBUFFER->pixelSize;
 
-        Debug::log(TRACE, "renderSurface: scalebufs %.2fx%.2f", SCALEBUFS.x, SCALEBUFS.y);
+        Debug::log(TRACE, "renderSurface: src %.0fx%.0f dst %.0fx%.0f scale %.2fx%.2f tr %d", srcSize.x, srcSize.y, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y, scale.x, scale.y, tr);
 
+        // Paint screenBuffer (physical) into PBUFFER (logical) with rotation-aware pattern matrix
         const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
         cairo_matrix_t matrixPre;
-        cairo_matrix_init_identity(&matrixPre);
-        cairo_matrix_scale(&matrixPre, SCALEBUFS.x, SCALEBUFS.y);
+        if (rotated) {
+            if (tr == 1) {
+                // TR=1 (90° CW): physical(px,py) → logical(py, Sh-1-px)
+                // Pattern matrix: PBUFFER(bx,by) → screenBuffer(by/scale, Sh - bx/scale)
+                cairo_matrix_init(&matrixPre, 0, 1.0 / scale.y, -1.0 / scale.x, 0, 0, srcSize.y);
+            } else {
+                // TR=3 (270° CW): physical(px,py) → logical(Wp-1-py, px)
+                // Pattern matrix: PBUFFER(bx,by) → screenBuffer(Sw - by/scale, bx/scale)
+                cairo_matrix_init(&matrixPre, 0, -1.0 / scale.y, 1.0 / scale.x, 0, srcSize.x, 0);
+            }
+        } else {
+            cairo_matrix_init_identity(&matrixPre);
+            cairo_matrix_scale(&matrixPre, 1.0 / scale.x, 1.0 / scale.y);
+        }
         cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
         cairo_set_source(PCAIRO, PATTERNPRE);
         cairo_paint(PCAIRO);
@@ -500,14 +531,24 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         if (!m_bNoZoom) {
             cairo_save(PCAIRO);
 
-            const auto CLICKPOSBUF = CLICKPOS / PBUFFER->pixelSize * pSurface->screenBuffer->pixelSize;
+            // Convert PBUFFER click position to screenBuffer (physical) coords
+            Vector2D CLICKPOSBUF;
+            if (rotated) {
+                if (tr == 1)
+                    CLICKPOSBUF = {CLICKPOS.y / scale.y, srcSize.y - CLICKPOS.x / scale.x};
+                else
+                    CLICKPOSBUF = {srcSize.x - CLICKPOS.y / scale.y, CLICKPOS.x / scale.x};
+            } else {
+                CLICKPOSBUF = {CLICKPOS.x / scale.x, CLICKPOS.y / scale.y};
+            }
 
             const auto PIXCOLOR = getColorFromPixel(pSurface, CLICKPOSBUF);
             cairo_set_source_rgba(PCAIRO, PIXCOLOR.r / 255.f, PIXCOLOR.g / 255.f, PIXCOLOR.b / 255.f, PIXCOLOR.a / 255.f);
 
             cairo_scale(PCAIRO, 1, 1);
 
-            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, m_iCircleRadius + 5 / SCALEBUFS.x, 0, 2 * M_PI);
+            const auto circleRadiusPB = m_iCircleRadius * scale.x;
+            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, circleRadiusPB + 5, 0, 2 * M_PI);
             cairo_clip(PCAIRO);
 
             cairo_fill(PCAIRO);
@@ -524,15 +565,15 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
             cairo_matrix_init_identity(&matrix);
             cairo_matrix_translate(&matrix, CLICKPOSBUF.x + 0.5f, CLICKPOSBUF.y + 0.5f);
             cairo_matrix_scale(&matrix, 1.0 / m_fZoomScale, 1.0 / m_fZoomScale);
-            cairo_matrix_translate(&matrix, (-CLICKPOSBUF.x / SCALEBUFS.x) - 0.5f, (-CLICKPOSBUF.y / SCALEBUFS.y) - 0.5f);
+            cairo_matrix_translate(&matrix, -CLICKPOS.x - 0.5f, -CLICKPOS.y - 0.5f);
             cairo_pattern_set_matrix(PATTERN, &matrix);
             cairo_set_source(PCAIRO, PATTERN);
-            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, m_iCircleRadius / SCALEBUFS.x, 0, 2 * M_PI);
+            cairo_arc(PCAIRO, CLICKPOS.x, CLICKPOS.y, circleRadiusPB, 0, 2 * M_PI);
             cairo_clip(PCAIRO);
             cairo_paint(PCAIRO);
 
             if (!m_bDisablePreview) {
-                const auto  currentColor = getColorFromPixel(pSurface, CLICKPOS);
+                const auto  currentColor = getColorFromPixel(pSurface, CLICKPOSBUF);
                 std::string previewBuffer;
                 switch (m_bSelectedOutputMode) {
                     case OUTPUT_HEX: {
@@ -644,12 +685,24 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         cairo_rectangle(PCAIRO, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
         cairo_fill(PCAIRO);
     } else if (m_bCoordsInitialized) {
-        const auto SCALEBUFS  = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
+        const auto& srcSize = pSurface->screenBuffer->pixelSize;
+        const auto& monSize = pSurface->m_pMonitor->size;
+        const int   tr      = pSurface->m_pMonitor->transform;
+        const bool  rotated = tr % 2 == 1;
+        const auto  scale   = PBUFFER->pixelSize / monSize;
+
         const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
         cairo_matrix_t matrixPre;
-        cairo_matrix_init_identity(&matrixPre);
-        cairo_matrix_scale(&matrixPre, SCALEBUFS.x, SCALEBUFS.y);
+        if (rotated) {
+            if (tr == 1)
+                cairo_matrix_init(&matrixPre, 0, 1.0 / scale.y, -1.0 / scale.x, 0, 0, srcSize.y);
+            else
+                cairo_matrix_init(&matrixPre, 0, -1.0 / scale.y, 1.0 / scale.x, 0, srcSize.x, 0);
+        } else {
+            cairo_matrix_init_identity(&matrixPre);
+            cairo_matrix_scale(&matrixPre, 1.0 / scale.x, 1.0 / scale.y);
+        }
         cairo_pattern_set_matrix(PATTERNPRE, &matrixPre);
         cairo_set_source(PCAIRO, PATTERNPRE);
         cairo_paint(PCAIRO);
@@ -658,6 +711,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         cairo_pattern_destroy(PATTERNPRE);
     }
 
+    pSurface->lastBuffer = (PBUFFER == pSurface->buffers[0]) ? 0 : 1;
     pSurface->sendFrame();
     cairo_destroy(PCAIRO);
     cairo_surface_destroy(PBUFFER->surface);
