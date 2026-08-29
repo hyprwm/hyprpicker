@@ -47,7 +47,20 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) : m_pMonitor(pMonitor) {
     pLayerSurface->sendSetAnchor((zwlrLayerSurfaceV1Anchor)(ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
                                                             ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT));
     pLayerSurface->sendSetExclusiveZone(-1);
-    pLayerSurface->sendSetKeyboardInteractivity(1);
+    if (g_pHyprpicker->m_bFreezeOnly) {
+        // A freeze is scenery. Taking EXCLUSIVE keyboard interactivity would
+        // pull focus from whatever is layered above, so that surface would
+        // never see Escape and could not be cancelled.
+        pLayerSurface->sendSetKeyboardInteractivity(0);
+
+        // An empty input region removes this surface from pointer routing, so
+        // clicks reach the surface above rather than being delivered here or
+        // silently swallowed. set_input_region has copy semantics, so the
+        // region may be destroyed before the commit that applies it.
+        auto inputRegion = makeShared<CCWlRegion>(g_pHyprpicker->m_pCompositor->sendCreateRegion());
+        pSurface->sendSetInputRegion(inputRegion.get());
+    } else
+        pLayerSurface->sendSetKeyboardInteractivity(1);
     pSurface->sendCommit();
 
     wl_display_flush(g_pHyprpicker->m_pWLDisplay);

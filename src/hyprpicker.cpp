@@ -31,6 +31,11 @@ void CHyprpicker::init() {
     }
 
     signal(SIGTERM, sigHandler);
+    // Without these, the default action kills the process before finish() runs,
+    // so ~SPoolBuffer never unlinks the shm files and every interrupted run
+    // strands one per monitor in XDG_RUNTIME_DIR.
+    signal(SIGINT, sigHandler);
+    signal(SIGHUP, sigHandler);
 
     m_pRegistry = makeShared<CCWlRegistry>((wl_proxy*)wl_display_get_registry(m_pWLDisplay));
     m_pRegistry->setGlobal([this](CCWlRegistry* r, uint32_t name, const char* interface, uint32_t version) {
@@ -125,7 +130,9 @@ void CHyprpicker::init() {
     while (m_bRunning && wl_display_dispatch(m_pWLDisplay) != -1) {
         //renderSurface(m_pLastSurface);
     }
-    finish(1);
+    // A signal is how a freeze is meant to end, and it has no color to report,
+    // so exiting non-zero there would make every script wrapping it see failure.
+    finish(m_bFreezeOnly ? 0 : 1);
 }
 
 void CHyprpicker::finish(int code) {
@@ -643,7 +650,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
         cairo_set_source_rgba(PCAIRO, 0, 0, 0, 0);
         cairo_rectangle(PCAIRO, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
         cairo_fill(PCAIRO);
-    } else if (m_bCoordsInitialized) {
+    } else if (m_bCoordsInitialized || m_bFreezeOnly) {
         const auto SCALEBUFS  = pSurface->screenBuffer->pixelSize / PBUFFER->pixelSize;
         const auto PATTERNPRE = cairo_pattern_create_for_surface(pSurface->screenBuffer->surface);
         cairo_pattern_set_filter(PATTERNPRE, CAIRO_FILTER_BILINEAR);
@@ -721,6 +728,9 @@ void CHyprpicker::initKeyboard() {
     });
 
     m_pKeyboard->setKey([this](CCWlKeyboard* r, uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
+        if (m_bFreezeOnly)
+            return;
+
         if (state != WL_KEYBOARD_KEY_STATE_PRESSED)
             return;
         if (m_pXKBState) {
@@ -744,6 +754,9 @@ void CHyprpicker::initKeyboard() {
 
 void CHyprpicker::initMouse() {
     m_pPointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_proxy* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+        if (m_bFreezeOnly)
+            return;
+
         auto x = wl_fixed_to_double(surface_x);
         auto y = wl_fixed_to_double(surface_y);
 
@@ -763,6 +776,9 @@ void CHyprpicker::initMouse() {
         markDirty();
     });
     m_pPointer->setLeave([this](CCWlPointer* r, uint32_t timeMs, wl_proxy* surface) {
+        if (m_bFreezeOnly)
+            return;
+
         for (auto& ls : m_vLayerSurfaces) {
             if (ls->pSurface->resource() == surface) {
                 if (m_pLastSurface == ls.get())
@@ -774,6 +790,9 @@ void CHyprpicker::initMouse() {
         markDirty();
     });
     m_pPointer->setMotion([this](CCWlPointer* r, uint32_t timeMs, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+        if (m_bFreezeOnly)
+            return;
+
         auto x = wl_fixed_to_double(surface_x);
         auto y = wl_fixed_to_double(surface_y);
 
@@ -782,16 +801,25 @@ void CHyprpicker::initMouse() {
         markDirty();
     });
     m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
+        // Freeze-only takes no input. The empty input region should mean these
+        // never fire; this is the backstop for compositors that deliver events
+        // to a layer surface regardless of it.
+        if (m_bFreezeOnly)
+            return;
+
         // Only the press edge should pick. A release can arrive without a
         // preceding press -- the button goes down over whatever was on screen
         // before, and hyprpicker maps under the pointer while it is still held
-        // -- and picking there samples a colour the user never aimed at.
+        // -- and picking there samples a color the user never aimed at.
         if (button_state != WL_POINTER_BUTTON_STATE_PRESSED)
             return;
 
         outputColor();
     });
     m_pPointer->setAxis([this](CCWlPointer* r, uint32_t time, uint32_t axis, wl_fixed_t value) {
+        if (m_bFreezeOnly)
+            return;
+
         if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
             return;
 

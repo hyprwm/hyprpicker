@@ -52,6 +52,7 @@ class CHyprpicker {
     bool                                        m_bNoZoom                = false;
     bool                                        m_bNoFractional          = false;
     bool                                        m_bDisablePreview        = false;
+    bool                                        m_bFreezeOnly            = false;
     bool                                        m_bUseLowerCase          = false;
     bool                                        m_bIncludeCursor         = false;
     bool                                        m_bCopyStandardColorName = false;
