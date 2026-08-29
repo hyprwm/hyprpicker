@@ -781,7 +781,16 @@ void CHyprpicker::initMouse() {
 
         markDirty();
     });
-    m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) { outputColor(); });
+    m_pPointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
+        // Only the press edge should pick. A release can arrive without a
+        // preceding press -- the button goes down over whatever was on screen
+        // before, and hyprpicker maps under the pointer while it is still held
+        // -- and picking there samples a colour the user never aimed at.
+        if (button_state != WL_POINTER_BUTTON_STATE_PRESSED)
+            return;
+
+        outputColor();
+    });
     m_pPointer->setAxis([this](CCWlPointer* r, uint32_t time, uint32_t axis, wl_fixed_t value) {
         if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
             return;
