@@ -16,6 +16,7 @@ static void help() {
               << " -o | --output-format=fmt   | Specifies how the output color should be formatted e.g. rgb({0}, {1}, {2}) would output rgb(red, green, blue) if --format=rgb\n"
               << " -n | --notify              | Sends a desktop notification when a color is picked (requires notify-send and a notification daemon like dunst)\n"
               << " -b | --no-fancy            | Disables the \"fancy\" (aka. colored) outputting\n"
+              << "      --color=when          | When to color the output: auto (default), always, never. always keeps color when piped\n"
               << " -h | --help                | Show this help message\n"
               << " -r | --render-inactive     | Render (freeze) inactive displays\n"
               << " -z | --no-zoom             | Disable the zoom lens\n"
@@ -31,8 +32,16 @@ static void help() {
               << " -V | --version             | Print version info\n";
 }
 
+enum eColorWhen : uint8_t {
+    COLOR_AUTO = 0,
+    COLOR_ALWAYS,
+    COLOR_NEVER,
+};
+
 int main(int argc, char** argv, char** envp) {
     g_pHyprpicker = std::make_unique<CHyprpicker>();
+
+    eColorWhen colorWhen = COLOR_AUTO;
 
     while (true) {
         int                  option_index   = 0;
@@ -41,6 +50,7 @@ int main(int argc, char** argv, char** envp) {
                                                {"output-format", required_argument, nullptr, 'o'},
                                                {"help", no_argument, nullptr, 'h'},
                                                {"no-fancy", no_argument, nullptr, 'b'},
+                                               {"color", required_argument, nullptr, 1},
                                                {"notify", no_argument, nullptr, 'n'},
                                                {"render-inactive", no_argument, nullptr, 'r'},
                                                {"no-zoom", no_argument, nullptr, 'z'},
@@ -80,7 +90,20 @@ int main(int argc, char** argv, char** envp) {
             case 'o': g_pHyprpicker->m_sOutputFormat = optarg; break;
             case 'N': g_pHyprpicker->m_bCopyStandardColorName = true; break;
             case 'h': help(); exit(0);
-            case 'b': g_pHyprpicker->m_bFancyOutput = false; break;
+            case 'b': colorWhen = COLOR_NEVER; break;
+            case 1: {
+                if (strcasecmp(optarg, "auto") == 0)
+                    colorWhen = COLOR_AUTO;
+                else if (strcasecmp(optarg, "always") == 0)
+                    colorWhen = COLOR_ALWAYS;
+                else if (strcasecmp(optarg, "never") == 0)
+                    colorWhen = COLOR_NEVER;
+                else {
+                    Debug::log(NONE, "Unrecognized --color value %s, expected auto, always or never", optarg);
+                    exit(1);
+                }
+                break;
+            }
             case 'n': g_pHyprpicker->m_bNotify = true; break;
             case 'a': g_pHyprpicker->m_bAutoCopy = true; break;
             case 'r': g_pHyprpicker->m_bRenderInactive = true; break;
@@ -146,8 +169,14 @@ int main(int argc, char** argv, char** envp) {
         }
     }
 
-    if (!isatty(fileno(stdout)) || getenv("NO_COLOR"))
-        g_pHyprpicker->m_bFancyOutput = false;
+    switch (colorWhen) {
+        case COLOR_ALWAYS: g_pHyprpicker->m_bFancyOutput = true; break;
+        case COLOR_NEVER: g_pHyprpicker->m_bFancyOutput = false; break;
+        case COLOR_AUTO:
+            if (!isatty(fileno(stdout)) || getenv("NO_COLOR"))
+                g_pHyprpicker->m_bFancyOutput = false;
+            break;
+    }
 
     if (g_pHyprpicker->m_sOutputFormat.empty()) {
         switch (g_pHyprpicker->m_bSelectedOutputMode) {

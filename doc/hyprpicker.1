@@ -51,9 +51,24 @@ The available options are:
 .Pp
 The default format is
 .Ar hex .
-.It Fl n , Fl Fl no-fancy
+.It Fl b , Fl Fl no-fancy
 Disable colored output.
 Default behavior is to color the output in the same color as the selected pixel.
+Equivalent to
+.Fl Fl color Ns = Ns Ar never .
+.It Fl Fl color Ns = Ns Ar when
+Control when the output is colored.
+.Bl -tag -width always -compact
+.It Ar auto
+Color the output only when standard output is a terminal and
+.Ev NO_COLOR
+is unset.
+This is the default.
+.It Ar always
+Always color the output, including when it is piped or redirected.
+.It Ar never
+Never color the output.
+.El
 .It Fl h , Fl Fl help
 Display a help message and exit successfully from the program.
 .It Fl c , Fl Fl cursor
@@ -62,7 +77,9 @@ Include the cursor in the frozen preview.
 .Sh ENVIRONMENT
 .Bl -tag -width NO_COLOR
 .It Ev NO_COLOR
-If set, disables colored output.
+If set, disables colored output, unless
+.Fl Fl color Ns = Ns Ar always
+is given.
 .El
 .Sh EXIT STATUS
 .Ex -std
