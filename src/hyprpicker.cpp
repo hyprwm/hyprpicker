@@ -733,6 +733,19 @@ void CHyprpicker::initKeyboard() {
                 m_vLastCoords.y -= m_vLastCoords.y > 0;
             else if (XKBKey == XKB_KEY_Down)
                 m_vLastCoords.y += m_vLastCoords.y < m_pLastSurface->m_pMonitor->size.y;
+            else if (XKBKey == XKB_KEY_f || XKBKey == XKB_KEY_F) {
+                m_bSelectedOutputMode = static_cast<eOutputMode>((m_bSelectedOutputMode + 1) % numOutputValues.size());
+
+                switch (m_bSelectedOutputMode) {
+                    case OUTPUT_CMYK: m_sOutputFormat = "{}% {}% {}% {}%"; break;
+                    case OUTPUT_HEX: m_sOutputFormat = "#{}{}{}"; break;
+                    case OUTPUT_RGB: m_sOutputFormat = "{} {} {}"; break;
+                    case OUTPUT_HSL: m_sOutputFormat = "{} {}% {}%"; break;
+                    case OUTPUT_HSV: m_sOutputFormat = "{} {}% {}%"; break;
+                }
+
+                markDirty();
+            }
             else if (XKBKey == XKB_KEY_Return)
                 outputColor();
             else if (XKBKey == XKB_KEY_Escape)
