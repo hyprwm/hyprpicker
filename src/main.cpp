@@ -13,6 +13,8 @@ static void help() {
     std::cout << "Hyprpicker usage: hyprpicker [arg [...]].\n\nArguments:\n"
               << " -a | --autocopy            | Automatically copies the output to the clipboard (requires wl-clipboard)\n"
               << " -f | --format=fmt          | Specifies the output format (cmyk, hex, rgb, hsl, hsv)\n"
+              << "      --format-key=key      | Specifies the xkb keysym used to cycle output formats (default: f)\n"
+              << "      --remember-format     | Restores and saves the last selected output format\n"
               << " -o | --output-format=fmt   | Specifies how the output color should be formatted e.g. rgb({0}, {1}, {2}) would output rgb(red, green, blue) if --format=rgb\n"
               << " -n | --notify              | Sends a desktop notification when a color is picked (requires notify-send and a notification daemon like dunst)\n"
               << " -b | --no-fancy            | Disables the \"fancy\" (aka. colored) outputting\n"
@@ -33,11 +35,14 @@ static void help() {
 
 int main(int argc, char** argv, char** envp) {
     g_pHyprpicker = std::make_unique<CHyprpicker>();
+    bool outputModeProvided = false;
 
     while (true) {
         int                  option_index   = 0;
         static struct option long_options[] = {{"autocopy", no_argument, nullptr, 'a'},
                                                {"format", required_argument, nullptr, 'f'},
+                                               {"format-key", required_argument, nullptr, 'k'},
+                                               {"remember-format", no_argument, nullptr, 'R'},
                                                {"output-format", required_argument, nullptr, 'o'},
                                                {"help", no_argument, nullptr, 'h'},
                                                {"no-fancy", no_argument, nullptr, 'b'},
@@ -62,6 +67,7 @@ int main(int argc, char** argv, char** envp) {
 
         switch (c) {
             case 'f':
+                outputModeProvided = true;
                 if (strcasecmp(optarg, "cmyk") == 0)
                     g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_CMYK;
                 else if (strcasecmp(optarg, "hex") == 0)
@@ -77,6 +83,14 @@ int main(int argc, char** argv, char** envp) {
                     exit(1);
                 }
                 break;
+            case 'k':
+                g_pHyprpicker->m_xkbFormatKey = xkb_keysym_from_name(optarg, XKB_KEYSYM_CASE_INSENSITIVE);
+                if (g_pHyprpicker->m_xkbFormatKey == XKB_KEY_NoSymbol) {
+                    Debug::log(NONE, "Unrecognized format key %s", optarg);
+                    exit(1);
+                }
+                break;
+            case 'R': g_pHyprpicker->m_bRememberOutputMode = true; break;
             case 'o': g_pHyprpicker->m_sOutputFormat = optarg; break;
             case 'N': g_pHyprpicker->m_bCopyStandardColorName = true; break;
             case 'h': help(); exit(0);
@@ -148,6 +162,9 @@ int main(int argc, char** argv, char** envp) {
 
     if (!isatty(fileno(stdout)) || getenv("NO_COLOR"))
         g_pHyprpicker->m_bFancyOutput = false;
+
+    if (g_pHyprpicker->m_bRememberOutputMode && !outputModeProvided)
+        g_pHyprpicker->restoreOutputMode();
 
     if (g_pHyprpicker->m_sOutputFormat.empty()) {
         switch (g_pHyprpicker->m_bSelectedOutputMode) {
