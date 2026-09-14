@@ -273,7 +273,8 @@ void CHyprpicker::outputColor() {
     if (m_bNotify)
         NNotify::send(hexColor, formattedColor);
 
-    saveOutputMode();
+    if (m_bRememberOutputMode)
+        saveOutputMode();
     finish();
 }
 

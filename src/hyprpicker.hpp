@@ -56,6 +56,7 @@ class CHyprpicker {
     bool                                        m_bUseLowerCase          = false;
     bool                                        m_bIncludeCursor         = false;
     bool                                        m_bCopyStandardColorName = false;
+    bool                                        m_bRememberOutputMode    = false;
 
     volatile std::atomic<bool>                  m_bRunning      = true;
     float                                       m_fZoomScale    = 10.0;
