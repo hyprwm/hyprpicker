@@ -34,6 +34,7 @@ static void help() {
 
 int main(int argc, char** argv, char** envp) {
     g_pHyprpicker = std::make_unique<CHyprpicker>();
+    bool outputModeProvided = false;
 
     while (true) {
         int                  option_index   = 0;
@@ -64,6 +65,7 @@ int main(int argc, char** argv, char** envp) {
 
         switch (c) {
             case 'f':
+                outputModeProvided = true;
                 if (strcasecmp(optarg, "cmyk") == 0)
                     g_pHyprpicker->m_bSelectedOutputMode = OUTPUT_CMYK;
                 else if (strcasecmp(optarg, "hex") == 0)
@@ -157,6 +159,9 @@ int main(int argc, char** argv, char** envp) {
 
     if (!isatty(fileno(stdout)) || getenv("NO_COLOR"))
         g_pHyprpicker->m_bFancyOutput = false;
+
+    if (!outputModeProvided)
+        g_pHyprpicker->restoreOutputMode();
 
     if (g_pHyprpicker->m_sOutputFormat.empty()) {
         switch (g_pHyprpicker->m_bSelectedOutputMode) {

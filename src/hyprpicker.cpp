@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <format>
 #include <mutex>
+#include <optional>
 #include <hyprutils/math/Vector2D.hpp>
 #include <wayland-client-protocol.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
@@ -15,6 +16,46 @@
 
 static void sigHandler(int sig) {
     g_pHyprpicker->m_bRunning.store(false);
+}
+
+static constexpr std::array<std::string_view, 5> OUTPUT_MODE_NAMES = {"cmyk", "hex", "rgb", "hsl", "hsv"};
+
+static std::optional<std::filesystem::path> outputModePath() {
+    if (const char* stateHome = getenv("XDG_STATE_HOME"); stateHome && *stateHome)
+        return std::filesystem::path(stateHome) / "hyprpicker" / "format";
+
+    if (const char* home = getenv("HOME"); home && *home)
+        return std::filesystem::path(home) / ".local" / "state" / "hyprpicker" / "format";
+
+    return std::nullopt;
+}
+
+void CHyprpicker::restoreOutputMode() {
+    const auto PATH = outputModePath();
+    if (!PATH)
+        return;
+
+    std::ifstream state(*PATH);
+    std::string   format;
+    state >> format;
+
+    const auto FORMAT = std::find(OUTPUT_MODE_NAMES.begin(), OUTPUT_MODE_NAMES.end(), format);
+    if (FORMAT != OUTPUT_MODE_NAMES.end())
+        m_bSelectedOutputMode = static_cast<eOutputMode>(std::distance(OUTPUT_MODE_NAMES.begin(), FORMAT));
+}
+
+void CHyprpicker::saveOutputMode() {
+    const auto PATH = outputModePath();
+    if (!PATH)
+        return;
+
+    std::error_code error;
+    std::filesystem::create_directories(PATH->parent_path(), error);
+    if (error)
+        return;
+
+    std::ofstream state(*PATH);
+    state << OUTPUT_MODE_NAMES.at(m_bSelectedOutputMode) << '\n';
 }
 
 void CHyprpicker::init() {
@@ -232,6 +273,7 @@ void CHyprpicker::outputColor() {
     if (m_bNotify)
         NNotify::send(hexColor, formattedColor);
 
+    saveOutputMode();
     finish();
 }
 

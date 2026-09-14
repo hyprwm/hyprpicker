@@ -86,6 +86,8 @@ class CHyprpicker {
 
     void                                        finish(int code = 0);
     void                                        outputColor();
+    void                                        restoreOutputMode();
+    void                                        saveOutputMode();
 
     CColor                                      getColorFromPixel(CLayerSurface*, Vector2D);
 
