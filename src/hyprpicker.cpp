@@ -733,7 +733,7 @@ void CHyprpicker::initKeyboard() {
                 m_vLastCoords.y -= m_vLastCoords.y > 0;
             else if (XKBKey == XKB_KEY_Down)
                 m_vLastCoords.y += m_vLastCoords.y < m_pLastSurface->m_pMonitor->size.y;
-            else if (XKBKey == XKB_KEY_f || XKBKey == XKB_KEY_F) {
+            else if (xkb_keysym_to_lower(XKBKey) == xkb_keysym_to_lower(m_xkbFormatKey)) {
                 m_bSelectedOutputMode = static_cast<eOutputMode>((m_bSelectedOutputMode + 1) % numOutputValues.size());
 
                 switch (m_bSelectedOutputMode) {

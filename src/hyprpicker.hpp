@@ -40,6 +40,7 @@ class CHyprpicker {
     xkb_context*                                m_pXKBContext = nullptr;
     xkb_keymap*                                 m_pXKBKeymap  = nullptr;
     xkb_state*                                  m_pXKBState   = nullptr;
+    xkb_keysym_t                                m_xkbFormatKey = XKB_KEY_f;
 
     eOutputMode                                 m_bSelectedOutputMode = OUTPUT_HEX;
     std::string                                 m_sOutputFormat       = "";

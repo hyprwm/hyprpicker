@@ -8,6 +8,7 @@
 .Nm
 .Op Fl acnh
 .Op Fl f Ar fmt
+.Op Fl Fl format-key Ns = Ns Ar key
 .Sh DESCRIPTION
 The
 .Nm
@@ -51,6 +52,10 @@ The available options are:
 .Pp
 The default format is
 .Ar hex .
+.It Fl Fl format-key Ns = Ns Ar key
+Set the xkb keysym used to cycle output formats while picking.
+The default key is
+.Ar f .
 .It Fl n , Fl Fl no-fancy
 Disable colored output.
 Default behavior is to color the output in the same color as the selected pixel.
