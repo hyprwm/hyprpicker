@@ -573,12 +573,16 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                     };
                 };
                 cairo_set_source_rgba(PCAIRO, 0.0, 0.0, 0.0, 0.75);
+                cairo_select_font_face(PCAIRO, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+                cairo_set_font_size(PCAIRO, 18);
+                cairo_text_extents_t extents;
+                cairo_text_extents(PCAIRO, "X", &extents);
 
                 std::string_view standardColorName = currentColor.getStandardColorName();
                 bool             hasStandardName   = !standardColorName.empty();
 
                 double           textPadding        = 8.0;
-                double           characterWidth     = 11.0;
+                double           characterWidth     = extents.width;
                 double           previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
                 double           standardNameWidth  = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
 
@@ -617,8 +621,6 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 cairo_fill(PCAIRO);
 
                 cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 1.0);
-                cairo_select_font_face(PCAIRO, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-                cairo_set_font_size(PCAIRO, 18);
 
                 double internalTextPadding = 5.0;
                 double textDrawPositionX   = boxPositionX + internalTextPadding;
