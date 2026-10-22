@@ -582,7 +582,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 bool             hasStandardName   = !standardColorName.empty();
 
                 double           textPadding        = 8.0;
-                double           characterWidth     = extents.width;
+                double           characterWidth     = extents.width + (extents.width - 11);
                 double           previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
                 double           standardNameWidth  = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
 
@@ -609,7 +609,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 }
 
                 size_t longestTextLength = hasStandardName ? std::max(previewBuffer.length(), standardColorName.length()) : previewBuffer.length();
-                boxPositionX -= 5.5 * longestTextLength;
+                boxPositionX -= 0.5 * characterWidth * longestTextLength;
 
                 cairo_move_to(PCAIRO, boxPositionX + cornerRadius, boxPositionY);
                 cairo_arc(PCAIRO, boxPositionX + boxWidth - cornerRadius, boxPositionY + cornerRadius, cornerRadius, -M_PI_2, 0);
