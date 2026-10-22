@@ -41,10 +41,10 @@ void CHyprpicker::init() {
         } else if (strcmp(interface, wl_output_interface.name) == 0) {
             m_mtTickMutex.lock();
 
-            const auto PMONITOR    = g_pHyprpicker->m_vMonitors
-                                         .emplace_back(std::make_unique<SMonitor>(
-                                             makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_output_interface, 4))))
-                                         .get();
+            const auto PMONITOR = g_pHyprpicker->m_vMonitors
+                                      .emplace_back(std::make_unique<SMonitor>(
+                                          makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_output_interface, 4))))
+                                      .get();
             PMONITOR->wayland_name = name;
 
             m_mtTickMutex.unlock();
@@ -581,10 +581,10 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 std::string_view standardColorName = currentColor.getStandardColorName();
                 bool             hasStandardName   = !standardColorName.empty();
 
-                double           textPadding        = 8.0;
-                double           characterWidth     = extents.width + (extents.width - 11);
-                double           previewBufferWidth = textPadding + (characterWidth * previewBuffer.length());
-                double           standardNameWidth  = hasStandardName ? textPadding + (characterWidth * standardColorName.length()) : 0.0;
+                double           horizontalTextPadding        = 5.0;
+                double           characterWidth     = extents.x_advance;
+                double           previewBufferWidth = (2 * horizontalTextPadding) + (characterWidth * previewBuffer.length());
+                double           standardNameWidth  = hasStandardName ? (2 * horizontalTextPadding) + (characterWidth * standardColorName.length()) : 0.0;
 
                 double           boxWidth     = std::max(previewBufferWidth, standardNameWidth);
                 double           boxHeight    = hasStandardName ? 50.0 : 28.0;
@@ -611,7 +611,6 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
                 size_t longestTextLength = hasStandardName ? std::max(previewBuffer.length(), standardColorName.length()) : previewBuffer.length();
                 boxPositionX -= 0.5 * characterWidth * longestTextLength;
 
-                cairo_move_to(PCAIRO, boxPositionX + cornerRadius, boxPositionY);
                 cairo_arc(PCAIRO, boxPositionX + boxWidth - cornerRadius, boxPositionY + cornerRadius, cornerRadius, -M_PI_2, 0);
                 cairo_arc(PCAIRO, boxPositionX + boxWidth - cornerRadius, boxPositionY + boxHeight - cornerRadius, cornerRadius, 0, M_PI_2);
                 cairo_arc(PCAIRO, boxPositionX + cornerRadius, boxPositionY + boxHeight - cornerRadius, cornerRadius, M_PI_2, M_PI);
@@ -622,8 +621,7 @@ void CHyprpicker::renderSurface(CLayerSurface* pSurface, bool forceInactive) {
 
                 cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 1.0);
 
-                double internalTextPadding = 5.0;
-                double textDrawPositionX   = boxPositionX + internalTextPadding;
+                double textDrawPositionX = boxPositionX + horizontalTextPadding;
 
                 if (hasStandardName) {
                     cairo_move_to(PCAIRO, textDrawPositionX, boxPositionY + 20);
