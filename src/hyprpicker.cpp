@@ -51,7 +51,16 @@ void CHyprpicker::init() {
         } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
             m_pLayerShell = makeShared<CCZwlrLayerShellV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &zwlr_layer_shell_v1_interface, 1));
         } else if (strcmp(interface, wl_seat_interface.name) == 0) {
-            m_pSeat = makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_seat_interface, 1));
+            if (m_pSeat)
+                return;
+
+            if (version < 5) {
+                Debug::log(CRIT, "wl_seat version 5 or newer is required, compositor advertised version %u", version);
+                finish(1);
+                return;
+            }
+
+            m_pSeat = makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)m_pRegistry->resource(), name, &wl_seat_interface, 5));
 
             m_pSeat->setCapabilities([this](CCWlSeat* seat, uint32_t caps) {
                 if (caps & WL_SEAT_CAPABILITY_POINTER) {
