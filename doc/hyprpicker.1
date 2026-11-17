@@ -8,6 +8,8 @@
 .Nm
 .Op Fl acnh
 .Op Fl f Ar fmt
+.Op Fl Fl format-key Ns = Ns Ar key
+.Op Fl Fl remember-format
 .Sh DESCRIPTION
 The
 .Nm
@@ -51,6 +53,19 @@ The available options are:
 .Pp
 The default format is
 .Ar hex .
+.It Fl Fl format-key Ns = Ns Ar key
+Set the xkb keysym used to cycle output formats while picking.
+The default key is
+.Ar f .
+.It Fl Fl remember-format
+Restore the last selected format at startup and save the format after a color is selected.
+State is stored in
+.Pa $XDG_STATE_HOME/hyprpicker/format ,
+or
+.Pa $HOME/.local/state/hyprpicker/format
+when
+.Ev XDG_STATE_HOME
+is unset.
 .It Fl n , Fl Fl no-fancy
 Disable colored output.
 Default behavior is to color the output in the same color as the selected pixel.
@@ -63,6 +78,11 @@ Include the cursor in the frozen preview.
 .Bl -tag -width NO_COLOR
 .It Ev NO_COLOR
 If set, disables colored output.
+.It Ev XDG_STATE_HOME
+Sets the base directory for the output format saved by
+.Fl Fl remember-format .
+Defaults to
+.Pa $HOME/.local/state .
 .El
 .Sh EXIT STATUS
 .Ex -std
